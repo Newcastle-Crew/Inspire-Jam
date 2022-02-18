@@ -1,0 +1,1 @@
+This is just a text file so that we can have git keep this folder around so I don't have to explain the folder structure to squid more than necessary.
