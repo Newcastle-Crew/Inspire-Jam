@@ -199,6 +199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   title: "\u30BF\u30A4\u30C8\u30EB\u304C\u306A\u3044"
   text: text goes here
+  susness: 0.3
 --- !u!65 &100270784
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -334,6 +335,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec81007c68749bb49a5150051725eb4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  current: 0
+  sprint_susness: 1
+  note_susness: 0.3
+  reading: {fileID: 0}
   conversation_text: {fileID: 406911381}
 --- !u!4 &274024426
 Transform:
@@ -598,6 +603,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8973f3ba1437ae44b6d2680525d340c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  idleMovePoints: []
+  idle_moving_speed: 0.2
+  alertnessLevel: 0
+  susLevel: 0
+  susLowering: 0.1
+  eye_offset: {x: 0, y: 0.6, z: 0}
   conversation:
   - You look gross
 --- !u!136 &645479758
@@ -1048,6 +1059,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8973f3ba1437ae44b6d2680525d340c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  idleMovePoints: []
+  idle_moving_speed: 0.2
+  alertnessLevel: 0
+  susLevel: 0
+  susLowering: 0.1
+  eye_offset: {x: 0, y: 0.6, z: 0}
   conversation:
   - "Hello (# \uFF9F\u0414\uFF9F)"
   - This is some conversation
@@ -1813,6 +1830,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8973f3ba1437ae44b6d2680525d340c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  idleMovePoints: []
+  idle_moving_speed: 0.2
+  alertnessLevel: 0
+  susLevel: 0
+  susLowering: 0.1
+  eye_offset: {x: 0, y: 0.6, z: 0}
   conversation:
   - Join me
   - See the world from a new perspective

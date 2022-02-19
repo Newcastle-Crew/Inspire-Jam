@@ -5,18 +5,26 @@ using UnityEngine.UI;
 
 public class GameState : MonoBehaviour
 {
-    enum States { Playing, InNote, Conversing }
+    public enum States { Playing, InNote, Conversing }
 
-    States current = States.Playing;
+    public States current = States.Playing;
 
-    static GameState Instance = null;
+    public static GameState Instance = null;
+
+    // sus's per second
+    public float sprint_susness = 0.2f;
+    public float note_susness = 0.3f;
 
     SUPERCharacter.SUPERCharacterAIO character;
+
+    // States.InNote
+    public Note reading;
 
     // States.Conversing
     public Text conversation_text;
     string[] conversation;
     int conversation_index;
+    TalkativeNpc talking_to;
 
     bool singleFrameLock = false;
 
@@ -75,6 +83,11 @@ public class GameState : MonoBehaviour
         state.current = States.Conversing;
         state.singleFrameLock = true;
 
+        npc.state_stack.Add(npc.current);
+        npc.current = TalkativeNpc.States.Talking;
+        npc.target_angle = -look_towards.eulerAngles.y;
+
+        state.talking_to = npc;
         state.conversation = conversation;
         state.conversation_index = 0;
         state.ContinueConversation();
@@ -94,6 +107,9 @@ public class GameState : MonoBehaviour
 
         playerCamera.ExitGUIMode();
 
+        state.talking_to.current = state.talking_to.state_stack[state.talking_to.state_stack.Count - 1];
+        state.talking_to.state_stack.RemoveAt(state.talking_to.state_stack.Count - 1);
+        state.talking_to = null;
         state.current = States.Playing;
     }
 
@@ -122,6 +138,7 @@ public class GameState : MonoBehaviour
         noteGui.gameObject.SetActive(true);
         
         state.current = States.InNote;
+        state.reading = note;
         state.singleFrameLock = true;
     }
 
