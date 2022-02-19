@@ -47,6 +47,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
     void FixedUpdate() {
         var eyePos = transform.position + eye_offset;
+        bool useTargetAngle = false;
 
         // 
         // - Sus level things
@@ -75,7 +76,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             }
 
             if (susLevel > 0.25f) {
-                transform.rotation = Quaternion.LookRotation(targetPos - eyePos, Vector3.up);
+                useTargetAngle = true;
+                var look_rotation = Quaternion.LookRotation(targetPos - eyePos, Vector3.up);
+                target_angle = look_rotation.eulerAngles.y;
             }
         }
 
@@ -111,12 +114,17 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                     }
                 }
             } break;
+            case States.Talking: {
+                useTargetAngle = true;
+            } break;
             case States.IdleMoving: {
                 Debug.Log("Moving");
                 var error = idle_moving_target - transform.position;
                 rb.AddForce(error.normalized * idle_moving_speed);
 
-                target_angle = Mathf.Atan2(error.z, error.x);
+                var look_rotation = Quaternion.LookRotation(error, Vector3.up);
+                target_angle = look_rotation.eulerAngles.y;
+                useTargetAngle = true;
 
                 if (error.sqrMagnitude < idle_moving_acceptable_error*idle_moving_acceptable_error) {
                     Debug.Log("Stopped moving due to acceptable error");
@@ -126,10 +134,15 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             } break;
         }
 
-        if (current == States.IdleMoving || current == States.Talking) {
+        if (useTargetAngle) {
+            // Debug.Log(target_angle);
+            // transform.rotation = Quaternion.Euler(0f, target_angle, 0f);
             var angular_error = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, target_angle);
-            if (Mathf.Abs(angular_error) > 0.1f) {
+            const float MAX_ANGULAR_ERROR = 10f;
+            if (Mathf.Abs(angular_error) > MAX_ANGULAR_ERROR) {
                 rb.AddTorque(0f, Mathf.Sign(angular_error) * rotation_speed, 0f);
+            } else {
+                rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
             }
         }
     }

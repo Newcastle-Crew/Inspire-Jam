@@ -85,7 +85,7 @@ public class GameState : MonoBehaviour
 
         npc.state_stack.Add(npc.current);
         npc.current = TalkativeNpc.States.Talking;
-        npc.target_angle = -look_towards.eulerAngles.y;
+        npc.target_angle = 180f + look_towards.eulerAngles.y;
 
         state.talking_to = npc;
         state.conversation = conversation;
