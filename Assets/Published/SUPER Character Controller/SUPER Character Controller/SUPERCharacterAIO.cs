@@ -23,11 +23,15 @@ namespace SUPERCharacter{
 public class SUPERCharacterAIO : MonoBehaviour{
     #region Variables
 
+    bool exitGUIMode = false;
+    float smoothingSpeed = 5;
+
     #region Camera Settings
     [Header("Camera Settings")]
     //
     //Public
     //
+
     //Both
     public Camera playerCamera;
     public bool  enableCameraControl = true, lockAndHideMouse = true, autoGenerateCrosshair = true, showCrosshairIn3rdPerson = false, drawPrimitiveUI = false;
@@ -66,6 +70,9 @@ public class SUPERCharacterAIO : MonoBehaviour{
     //Internal
     //
     
+    public static SUPERCharacterAIO Instance = null;
+    IInteractable interactHoveringOver = null;
+
     //Both
     Vector2 MouseXY;
     Vector2 viewRotVelRef;
@@ -97,6 +104,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
     //Public
     //
     public bool enableMovementControl = true;
+    public bool enableMovement = true;
 
     //Walking/Sprinting/Crouching
     [Range(1.0f,650.0f)]public float walkingSpeed = 140, sprintingSpeed = 260, crouchingSpeed = 45;
@@ -257,12 +265,17 @@ public class SUPERCharacterAIO : MonoBehaviour{
     //
     //Public
     //
+
     public Key interactKey = Key.E;
     #else
     public KeyCode interactKey_L = KeyCode.E;
     #endif
     public float interactRange = 4;
     public LayerMask interactableLayer = -1;
+    public GameObject interactIconBase;
+    public Text interactNameText;
+    public bool enableInteract = true;
+
     //
     //Internal
     //
@@ -285,6 +298,10 @@ public class SUPERCharacterAIO : MonoBehaviour{
     public bool stickRendererToCapsuleBottom = true;
 
     #endregion
+
+    void Awake() {
+        Instance = this;
+    }
     
     [Space(18)]
     public bool enableGroundingDebugging = false, enableMovementDebugging = false, enableMouseAndCameraDebugging = false, enableVaultDebugging = false;
@@ -413,6 +430,34 @@ public class SUPERCharacterAIO : MonoBehaviour{
         #endregion
         
     }
+    
+    public void EnterGUIMode() {
+        enableMovement = false;
+        enableCameraControl =  false;
+        enableInteract = false;
+        crosshairImg.enabled = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    public void ExitGUIMode() {
+        exitGUIMode = true;
+    }
+
+    // HACK: This runs one frame later after you call `ExitGUIMode`, to make sure residual things don't happen
+    void ExitGUIModeInternal() {
+        enableMovement = true;
+        enableCameraControl   = true;
+        enableInteract = true;
+        crosshairImg.enabled = true;
+
+        if(lockAndHideMouse){
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
     void Update(){
 
         #region Input
@@ -532,7 +577,12 @@ public class SUPERCharacterAIO : MonoBehaviour{
             HeadRotDirForInput = Mathf.MoveTowardsAngle(HeadRotDirForInput,headRot.y, bodyCatchupSpeed*(1+Time.deltaTime));
             MovInput_Smoothed = Vector2.MoveTowards(MovInput_Smoothed, MovInput, inputResponseFiltering*(1+Time.deltaTime));
         }
-        InputDir = cameraPerspective == PerspectiveModes._1stPerson?  Vector3.ClampMagnitude((transform.forward*MovInput.y+transform.right * (viewInputMethods == ViewInputModes.Traditional ? MovInput.x : 0)),1) : Quaternion.AngleAxis(HeadRotDirForInput,Vector3.up) * (Vector3.ClampMagnitude((Vector3.forward*MovInput_Smoothed.y+Vector3.right * MovInput_Smoothed.x),1));
+        
+        if (cameraPerspective == PerspectiveModes._1stPerson) {
+            InputDir = Vector3.ClampMagnitude((transform.forward*MovInput.y+transform.right * (viewInputMethods == ViewInputModes.Traditional ? MovInput.x : 0)),1);
+        } else {
+            InputDir = Quaternion.AngleAxis(HeadRotDirForInput,Vector3.up) * (Vector3.ClampMagnitude((Vector3.forward*MovInput_Smoothed.y+Vector3.right * MovInput_Smoothed.x),1));
+        }
         GroundMovementSpeedUpdate();
         if(canJump && (holdJump? jumpInput_Momentary : jumpInput_FrameOf)){Jump(jumpPower);}
         #endregion
@@ -552,22 +602,43 @@ public class SUPERCharacterAIO : MonoBehaviour{
         #endregion
 
         #region Interaction
-        if(interactInput){
-            TryInteract();
+        var newInteracting = Interact();
+        if (newInteracting != interactHoveringOver) {
+            if (interactIconBase != null) {
+                interactIconBase.SetActive(newInteracting != null);
+            }
+
+            if (interactNameText != null && newInteracting != null) {
+                interactNameText.text = newInteracting.interactionName;
+            }
+        }
+        interactHoveringOver = newInteracting;
+        if(interactInput && interactHoveringOver != null){
+            interactHoveringOver.Interact();
         }
         #endregion
 
         #region Animation
         UpdateAnimationTriggers();
         #endregion
+
+        if (exitGUIMode) {
+            exitGUIMode = false;
+            ExitGUIModeInternal();
+        }
     }
     void FixedUpdate() {
 
         #region Movement
         if(enableMovementControl){
-            GetGroundInfo();
-            MovePlayer(InputDir,currentGroundSpeed);
-            if(isSliding){Slide();}
+            if (enableMovement) {
+                GetGroundInfo();
+                MovePlayer(InputDir,currentGroundSpeed);
+                if(isSliding){Slide();}
+            } else {
+                GetGroundInfo();
+                MovePlayer(Vector3.zero,currentGroundSpeed);
+            }
         }
         #endregion
 
@@ -653,7 +724,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
                         doingCamInterp = true;
                         Vector3 refVec = Vector3.zero, targetAngles = (Vector3.right * playerCamera.transform.localEulerAngles.x)+Vector3.up*transform.eulerAngles.y;
                         while(Vector3.Distance(targetAngles, AbsoluteEulerAngles)>0.1f){ 
-                            targetAngles = Vector3.SmoothDamp(targetAngles, AbsoluteEulerAngles, ref refVec, 25*Time.deltaTime);
+                            targetAngles = Vector3.SmoothDamp(targetAngles, AbsoluteEulerAngles, ref refVec, smoothingSpeed*Time.deltaTime);
                             targetAngles.x += targetAngles.x>180 ? -360 : targetAngles.x<-180 ? 360 :0;
                             targetAngles.x = Mathf.Clamp(targetAngles.x,-0.5f*verticalRotationRange,0.5f*verticalRotationRange);
                             playerCamera.transform.localEulerAngles = Vector3.right * targetAngles.x;
@@ -1385,10 +1456,12 @@ public class SUPERCharacterAIO : MonoBehaviour{
     #endregion
 
     #region Interactables
-    public bool TryInteract(){
+    public IInteractable Interact(){
+        if (!enableInteract) return null;
+
         if(cameraPerspective == PerspectiveModes._3rdPerson){
             Collider[] cols = Physics.OverlapBox(transform.position + (transform.forward*(interactRange/2)), Vector3.one*(interactRange/2),transform.rotation,interactableLayer,QueryTriggerInteraction.Ignore);
-            IInteractable interactable = null;
+            IInteractable result = null;
             float lastColestDist = 100;
             foreach(Collider c in cols){
                 IInteractable i = c.GetComponent<IInteractable>();
@@ -1396,22 +1469,19 @@ public class SUPERCharacterAIO : MonoBehaviour{
                     float d = Vector3.Distance(transform.position, c.transform.position);
                     if(d<lastColestDist){
                         lastColestDist = d;
-                        interactable = i;
+                        result = i;
                     }
                 }
             }
-            return ((interactable != null)? interactable.Interact() : false);
-            
+            return result;
         }else{
             RaycastHit h;
             if(Physics.SphereCast(playerCamera.transform.position,0.25f,playerCamera.transform.forward,out h,interactRange,interactableLayer,QueryTriggerInteraction.Ignore)){
-                IInteractable i = h.collider.GetComponent<IInteractable>();
-                if(i!=null){
-                    return i.Interact();
-                }
+                return h.collider.GetComponent<IInteractable>();
+            } else {
+                return null;
             }
         }
-        return false;
     }
     #endregion
 
@@ -1494,6 +1564,8 @@ public enum Stances{Standing, Crouching}
 
 #region Interfaces
 public interface IInteractable{
+    string interactionName { get; }
+
     bool Interact();
 }
 
@@ -1519,7 +1591,7 @@ public class SuperFPEditor : Editor{
     Texture2D BoxPanelColor;
     SUPERCharacterAIO t;
     SerializedObject tSO, SurvivalStatsTSO;
-    SerializedProperty interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats;
+    SerializedProperty interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats, interactIconBase, interactNameText;
     static bool cameraSettingsFoldout = false, movementSettingFoldout = false, survivalStatsFoldout, footStepFoldout = false;
 
     public void OnEnable(){
@@ -1530,6 +1602,8 @@ public class SuperFPEditor : Editor{
         groundLayerMask = tSO.FindProperty("whatIsGround");
         groundMatProf = tSO.FindProperty("footstepSoundSet");
         interactableLayer = tSO.FindProperty("interactableLayer"); 
+        interactIconBase = tSO.FindProperty("interactIconBase"); 
+        interactNameText = tSO.FindProperty("interactNameText"); 
         BoxPanelColor= new Texture2D(1, 1, TextureFormat.RGBAFloat, false);;
         BoxPanelColor.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.2f));
         BoxPanelColor.Apply();
@@ -1997,6 +2071,8 @@ public class SuperFPEditor : Editor{
         #endif
         t.interactRange = EditorGUILayout.Slider(new GUIContent("Range","How far out can an interactable be from the player's position?"), t.interactRange, 0.1f,10);
         EditorGUILayout.PropertyField(interactableLayer,new GUIContent("Interactable Layers", "The Layers to check for interactables  on."));
+        EditorGUILayout.PropertyField(interactIconBase,new GUIContent("Icon Base", "An icon that is activated once you're hovering over something interactable"));
+        EditorGUILayout.PropertyField(interactNameText,new GUIContent("Name text", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
 
         EditorGUILayout.EndVertical();
         #endregion
