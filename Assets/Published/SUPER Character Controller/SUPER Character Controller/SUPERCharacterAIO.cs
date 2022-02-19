@@ -1476,7 +1476,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
             return result;
         }else{
             RaycastHit h;
-            if(Physics.SphereCast(playerCamera.transform.position,0.25f,playerCamera.transform.forward,out h,interactRange,interactableLayer,QueryTriggerInteraction.Ignore)){
+            if(Physics.SphereCast(playerCamera.transform.position,0.02f,playerCamera.transform.forward,out h,interactRange,interactableLayer,QueryTriggerInteraction.Ignore)){
                 return h.collider.GetComponent<IInteractable>();
             } else {
                 return null;

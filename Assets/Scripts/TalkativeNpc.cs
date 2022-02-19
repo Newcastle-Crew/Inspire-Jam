@@ -23,11 +23,12 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     // States.IdleMoving
     public float idle_moving_speed = 1.0f;
     public float idle_moving_acceptable_error = 2f;
-    Vector3 idle_moving_target;
+    Transform idle_moving_target;
 
-    public float alertnessLevel = 0f;
-    public float susLevel = 0f;
-    public float susLowering = 0.1f;
+    public int susLevel = Sussy.NONE;
+    public bool knowsSusIdentity = false;
+    public float susTimer = 0f;
+    public float susTimeScalar = 1f;
 
     public Vector3 eye_offset = Vector2.up * 0.6f;
 
@@ -37,12 +38,38 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     const float SIGHT_DISTANCE = 20f;
     const float SIGHT_SIZE = 0.3f;
 
+    const float GLOBAL_SUS_TIME_SCALAR = 2f;
+
     void Awake() {
         rb = GetComponent<Rigidbody>();
 
         state_stack = new List<States>();
 
         target_angle = transform.rotation.eulerAngles.y;
+    }
+
+    void Start() {
+        var game_state = GameState.Instance;
+        game_state.npcs.Add(this);
+    }
+
+    public Vector3 EarPosition() {
+        return transform.position;
+    }
+
+    public void HearSusSound(int susLevel) {
+        var newSusTime = (float)(susLevel *susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
+        if (this.susLevel > susLevel) {
+            if (newSusTime > susTimer) susTimer = newSusTime;
+            return;
+        }
+
+        this.susLevel = susLevel;
+        if (susLevel == Sussy.MURDER) {
+            susTimer = 1_000_000_000f;
+        } else {
+            susTimer = (float)(susLevel *susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
+        }
     }
 
     void FixedUpdate() {
@@ -53,32 +80,11 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         // - Sus level things
         //
         {
-            susLevel -= susLowering * Time.fixedDeltaTime * susLowering;
-            if (susLevel < 0f) susLevel = 0f;
-
-            var state = GameState.Instance;
-
-            var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
-            Debug.Assert(playerCamera != null);
-            var targetPos = playerCamera.transform.position;
-
-            // It's a spherecast to make the seeing less precise
-            int mask = 1 << 0;
-            if(Physics.SphereCast(eyePos, SIGHT_SIZE, targetPos - eyePos, out var hit_info, SIGHT_DISTANCE, mask)) {
-                var player = hit_info.transform.GetComponent<SUPERCharacter.SUPERCharacterAIO>();
-                if (player != null) {
-                    // We can see the player. Are they doing something sus?
-                    if (player.isSprinting) susLevel += state.sprint_susness * Time.fixedDeltaTime;
-                    if (state.current == GameState.States.InNote) {
-                        susLevel += state.reading.susness * state.note_susness * Time.fixedDeltaTime;
-                    }
+            if (susLevel > Sussy.NONE) {
+                susTimer -= Time.fixedDeltaTime;
+                if (susTimer < 0f) {
+                    susLevel = Sussy.NONE;
                 }
-            }
-
-            if (susLevel > 0.25f) {
-                useTargetAngle = true;
-                var look_rotation = Quaternion.LookRotation(targetPos - eyePos, Vector3.up);
-                target_angle = look_rotation.eulerAngles.y;
             }
         }
 
@@ -90,27 +96,37 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 still_timer -= Time.fixedDeltaTime;
 
                 if (still_timer <= 0f) {
-                    // Pick a random target point.
-                    if (idleMovePointsParent != null && idleMovePointsParent.childCount > 0) {
-                        Debug.Log("Trying to find a point to move towards");
-                        var moving_towards = idleMovePointsParent.GetChild(Random.Range(0, idleMovePointsParent.childCount));
+                    // TODO: This mask should only include static objects.
+                    int mask = 1 << 0;
 
-                        // Make sure we can see the point
-                        var targetPos = moving_towards.transform.position;
-                        // TODO: This mask should only include static objects
-                        int mask = 1 << 0;
-                        if(!Physics.SphereCast(eyePos, SIGHT_SIZE, targetPos - eyePos, out var _unused, (targetPos - eyePos).magnitude, mask)) {
-                            Debug.Log("Found poitn to move towards");
-                            // We can go here
-                            idle_moving_target = targetPos;
-                            current = States.IdleMoving;
-                        } else {
-                            Debug.Log("Point isn't visible");
-                            still_timer = Random.Range(0.3f, 1f);
+                    Transform FindGrazeTarget() {
+                        if (idleMovePointsParent == null) return null;
+
+                        var targets = new List<Transform>();
+                        int childCount = idleMovePointsParent.childCount;
+                        for (var i=0; i<childCount; i++) {
+                            var child = idleMovePointsParent.GetChild(i);
+                            if (!child.gameObject.activeSelf) continue;
+
+                            var targetPos = child.position;
+                            if(!Physics.SphereCast(eyePos, SIGHT_SIZE, targetPos - eyePos, out var _unused, (targetPos - eyePos).magnitude, mask)) {
+                                targets.Add(child);
+                            }
                         }
+
+                        if (targets.Count == 0) return null;
+
+                        var moving_towards_i = Random.Range(0, targets.Count);
+                        return targets[moving_towards_i];
+                    }
+
+                    var moving_towards = FindGrazeTarget();
+                    if (moving_towards != null) {
+                        idle_moving_target = moving_towards;
+                        moving_towards.gameObject.SetActive(false);
+                        current = States.IdleMoving;
                     } else {
-                        Debug.Log("No valid point to move towards found");
-                        still_timer = Random.Range(1f, 5f);
+                        still_timer = Random.Range(2f, 4f);
                     }
                 }
             } break;
@@ -119,16 +135,17 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             } break;
             case States.IdleMoving: {
                 Debug.Log("Moving");
-                var error = idle_moving_target - transform.position;
+                var error = idle_moving_target.position - transform.position;
                 rb.AddForce(error.normalized * idle_moving_speed);
 
                 var look_rotation = Quaternion.LookRotation(error, Vector3.up);
                 target_angle = look_rotation.eulerAngles.y;
                 useTargetAngle = true;
 
-                if (error.sqrMagnitude < idle_moving_acceptable_error*idle_moving_acceptable_error) {
+                if (error.x*error.x+error.z*error.z < idle_moving_acceptable_error*idle_moving_acceptable_error) {
                     Debug.Log("Stopped moving due to acceptable error");
                     still_timer = Random.Range(1f, 5f);
+                    idle_moving_target.gameObject.SetActive(true);
                     current = States.Still;
                 }
             } break;

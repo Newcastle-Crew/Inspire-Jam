@@ -17,6 +17,8 @@ public class GameState : MonoBehaviour
 
     SUPERCharacter.SUPERCharacterAIO character;
 
+    public List<TalkativeNpc> npcs;
+
     // States.InNote
     public Note reading;
 
@@ -30,6 +32,7 @@ public class GameState : MonoBehaviour
 
     void Awake() {
         Instance = this;
+        npcs = new List<TalkativeNpc>();
     }
 
     void Update() {
@@ -59,6 +62,24 @@ public class GameState : MonoBehaviour
         } else {
             conversation_text.gameObject.SetActive(false);
             DisengageConversation();
+        }
+    }
+
+    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, int susLevel) {
+        var state = Instance;
+
+        // Find all the NPC:s within the radius that may hear the sound. Will scale with the npc:s hearing factor.
+        foreach(var npc in state.npcs) {
+            var earPos = npc.EarPosition();
+            var delta = earPos - pos;
+            var magSqr = delta.sqrMagnitude;
+
+            if(magSqr < distinctRadius*distinctRadius) {
+                // Audible
+                npc.HearSusSound(susLevel);
+            } else if(delta.sqrMagnitude < indistinctRadius*indistinctRadius) {
+                npc.HearSusSound(Sussy.ATTENTION_GRAB);
+            }
         }
     }
 
