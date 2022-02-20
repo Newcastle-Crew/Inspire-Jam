@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class GameState : MonoBehaviour
 {
-    public enum States { Playing, InNote, Conversing }
+    public enum States { Playing, InNote, Conversing, InInventory }
 
     public States current = States.Playing;
 
@@ -19,8 +19,12 @@ public class GameState : MonoBehaviour
 
     public List<TalkativeNpc> npcs;
 
+    // States.InInventory
+    public GameObject inventory_gui;
+
     // States.InNote
     public Note reading;
+    public NoteGUI note_gui;
 
     // States.Conversing
     public Text conversation_text;
@@ -41,17 +45,31 @@ public class GameState : MonoBehaviour
             return;
         }
 
-        if (current == States.Conversing) {
-            if (Input.GetKeyDown(KeyCode.E)) {
-                conversation_index++;
-                ContinueConversation();
-            }
-        }
+        switch (current) {
+            case States.Conversing: {
+                if (Input.GetKeyDown(KeyCode.E)) {
+                    conversation_index++;
+                    ContinueConversation();
+                }
+            } break;
 
-        if (current == States.InNote) {
-            if (Input.GetKeyDown(KeyCode.E)) {
-                CloseNote();
-            }
+            case States.InNote: {
+                if (Input.GetKeyDown(KeyCode.E)) {
+                    CloseNote();
+                }
+            } break;
+
+            case States.InInventory: {
+                if (Input.GetKeyDown(KeyCode.I)) {
+                    CloseInventory();
+                }
+            } break;
+
+            case States.Playing: {
+                if (Input.GetKeyDown(KeyCode.I)) {
+                    OpenInventory();
+                }
+            } break;
         }
     }
 
@@ -65,7 +83,7 @@ public class GameState : MonoBehaviour
         }
     }
 
-    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, int susLevel) {
+    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, Sussy.ActionKind action) {
         var state = Instance;
 
         // Find all the NPC:s within the radius that may hear the sound. Will scale with the npc:s hearing factor.
@@ -76,9 +94,19 @@ public class GameState : MonoBehaviour
 
             if(magSqr < distinctRadius*distinctRadius) {
                 // Audible
-                npc.HearSusSound(susLevel);
+                npc.HearSusSound(pos, action);
             } else if(delta.sqrMagnitude < indistinctRadius*indistinctRadius) {
-                npc.HearSusSound(Sussy.ATTENTION_GRAB);
+                npc.HearSusSound(pos, action);
+            }
+        }
+    }
+
+    public static void SusAction(Sussy.ActionKind action) {
+        var pos = SUPERCharacter.SUPERCharacterAIO.Instance.eyePosition;
+        var state = Instance;
+        foreach(var npc in state.npcs) {
+            if (npc.canSeePlayer) {
+                npc.SeeSusAction(action);
             }
         }
     }
@@ -134,10 +162,43 @@ public class GameState : MonoBehaviour
         state.current = States.Playing;
     }
 
+    public static void OpenInventory() {
+        var state = Instance;
+        var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
+        
+        if (state.current != States.Playing) {
+            Debug.LogError("Cannot open inventory while not in the playing state");
+            return;
+        }
+
+        playerCamera.EnterGUIMode();
+
+        state.inventory_gui.SetActive(true);
+
+        state.current = States.InInventory;
+        state.singleFrameLock = true;
+    }
+
+    public static void CloseInventory() {
+        var state = Instance;
+        var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
+        
+        if (state.current != States.InInventory) {
+            Debug.LogError("Cannot close inventory while not in the InInventory state");
+            return;
+        }
+
+        playerCamera.ExitGUIMode();
+
+        state.inventory_gui.SetActive(false);
+
+        state.current = States.Playing;
+    }
+
     public static void OpenNote(Note note) {
         var state = Instance;
         var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
-        var noteGui = NoteGUI.Instance;
+        var noteGui = state.note_gui;
 
         Debug.Assert(state != null);
         Debug.Assert(noteGui != null);
@@ -166,7 +227,7 @@ public class GameState : MonoBehaviour
     public static void CloseNote() {
         var state = Instance;
         var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
-        var noteGui = NoteGUI.Instance;
+        var noteGui = state.note_gui;
 
         Debug.Assert(state != null);
         Debug.Assert(noteGui != null);
