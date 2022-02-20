@@ -65,7 +65,7 @@ public class GameState : MonoBehaviour
         }
     }
 
-    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, int susLevel) {
+    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, Sussy.ActionKind action) {
         var state = Instance;
 
         // Find all the NPC:s within the radius that may hear the sound. Will scale with the npc:s hearing factor.
@@ -76,9 +76,19 @@ public class GameState : MonoBehaviour
 
             if(magSqr < distinctRadius*distinctRadius) {
                 // Audible
-                npc.HearSusSound(susLevel);
+                npc.HearSusSound(pos, action);
             } else if(delta.sqrMagnitude < indistinctRadius*indistinctRadius) {
-                npc.HearSusSound(Sussy.ATTENTION_GRAB);
+                npc.HearSusSound(pos, action);
+            }
+        }
+    }
+
+    public static void SusAction(Sussy.ActionKind action) {
+        var pos = SUPERCharacter.SUPERCharacterAIO.Instance.eyePosition;
+        var state = Instance;
+        foreach(var npc in state.npcs) {
+            if (npc.canSeePlayer) {
+                npc.SeeSusAction(action);
             }
         }
     }
