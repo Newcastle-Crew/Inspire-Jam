@@ -28,6 +28,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
     public float susLevelSpeedIncrease = 0.4f;
 
+    // When they're shot, if they don't die in one shot, they will scream!
+    public float health = 1f;
+
     // States.InvestigatingSus
     public float target_moving_acceptable_error = 2f;
     public float target_moving_speed = 8f;
@@ -94,7 +97,22 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         return transform.position + eye_offset;
     }
 
+    public void Shot(float damage, Vector3 point, Vector3 dir) {
+        health -= damage;
+        rb.AddForceAtPosition(dir * 20.3f + Vector3.up * 6f, point, ForceMode.Impulse);
+
+        if (health <= 0f) {
+            rb.constraints = RigidbodyConstraints.None;
+            GameState.Instance.npcs.Remove(this);
+            Destroy(this);
+        } else {
+            GameState.SusSound(transform.position, 14f, 20f, Sussy.ActionKind.ShotScream);
+        }
+    }
+
     public void HearSusSound(Vector3 position, Sussy.ActionKind action) {
+        if (health < 0f) return;
+
         int susLevel = Sussy.ActionToSus(action);
 
         var newSusTime = (float)(susLevel * susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
@@ -207,8 +225,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     void FixedUpdate() {
         var state = GameState.Instance;
         var eyePos = EyePosition();
-        var player = SUPERCharacter.SUPERCharacterAIO.Instance;
-        var player_pos = player.eyePosition;
+        var player = Player.Instance;
+        var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
+        var player_pos = player_cam.eyePosition;
         bool useTargetAngle = false;
 
         timeSinceExclamation += Time.fixedDeltaTime;
@@ -231,18 +250,16 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 var fov = susLevel > Sussy.NONE ? engagedFov : normalFov;
 
                 if (Mathf.Abs(delta_angle) <= fov) {
-                    if (!player.isCrouching) {
+                    if (!player_cam.isCrouching) {
                         // We try three different raycasts when you're standing up, so we don't miss the player if we should be seeing them
                         for (var i=0; i<3&&!canSeePlayer; i++) {
                             if(!Physics.SphereCast(player_pos + Vector3.up * (float)i * 0.3f, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
                                 canSeePlayer = true;
-                                Debug.Log("Can see player!!!!");
                             }
                         }
                     } else {
                         if(!Physics.SphereCast(player_pos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
                             canSeePlayer = true;
-                            Debug.Log("Can see player!!!!");
                         }
                     }
                 }
@@ -274,7 +291,11 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 }
             }
 
-            if (canSeePlayer && player.isSprinting) {
+            if (canSeePlayer && player.holding == Player.ItemKind.Gun) {
+                SeeSusAction(Sussy.ActionKind.HoldingGun);
+            }
+
+            if (canSeePlayer && player_cam.isSprinting) {
                 SeeSusAction(Sussy.ActionKind.Run);
             }
 
@@ -381,6 +402,20 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             } else {
                 rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
             }
+        }
+    }
+
+    void OnDrawGizmos() {
+
+        var eyePos = EyePosition();
+        var player = SUPERCharacter.SUPERCharacterAIO.Instance;
+        if (!player) return;
+
+        var player_pos = player.eyePosition;
+
+        if (canSeePlayer) {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(player_pos, eyePos);
         }
     }
 

@@ -35,6 +35,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
     //Both
     public Camera playerCamera;
     public Vector3 eyePosition { get => playerCamera.transform.position; }
+    public Quaternion eyeRotation { get => playerCamera.transform.rotation; }
     public bool  enableCameraControl = true, lockAndHideMouse = true, autoGenerateCrosshair = true, showCrosshairIn3rdPerson = false, drawPrimitiveUI = false;
     public Sprite crosshairSprite;
     public PerspectiveModes cameraPerspective = PerspectiveModes._1stPerson;
@@ -72,7 +73,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
     //
     
     public static SUPERCharacterAIO Instance = null;
-    IInteractable interactHoveringOver = null;
+    public IInteractable interactHoveringOver = null;
 
     //Both
     Vector2 MouseXY;
@@ -272,7 +273,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
     public KeyCode interactKey_L = KeyCode.E;
     #endif
     public float interactRange = 4;
-    public LayerMask interactableLayer = -1;
+    public LayerMask interactableLayer = (1 << 0) | (1 << 3);
     public GameObject interactIconBase;
     public Text interactNameText;
     public bool enableInteract = true;

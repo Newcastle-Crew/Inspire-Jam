@@ -15,6 +15,8 @@ public class Sussy : MonoBehaviour
         Fart,
         Indistinct,
         Reading,
+        HoldingGun,
+        ShotScream,
     }
 
     public static int ActionToSus(ActionKind action) {
@@ -23,6 +25,8 @@ public class Sussy : MonoBehaviour
             case ActionKind.Fart: return RUDE;
             case ActionKind.Reading: return RUDE;
             case ActionKind.Indistinct: return ATTENTION_GRAB;
+            case ActionKind.HoldingGun: return MURDER;
+            case ActionKind.ShotScream: return MURDER;
             default: {
                 Debug.LogError("Invalid action");
                 return NONE;
