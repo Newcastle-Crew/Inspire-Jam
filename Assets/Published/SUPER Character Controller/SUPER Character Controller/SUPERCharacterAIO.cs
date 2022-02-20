@@ -20,7 +20,9 @@ using UnityEngine.InputSystem.Interactions;
 // more camera animations
 namespace SUPERCharacter{
 [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(CapsuleCollider))][AddComponentMenu("SUPER Character/SUPER Character Controller")]
-public class SUPERCharacterAIO : MonoBehaviour{
+
+public class SUPERCharacterAIO : MonoBehaviour
+{
     #region Variables
 
     bool exitGUIMode = false;
@@ -306,6 +308,7 @@ public class SUPERCharacterAIO : MonoBehaviour{
     [Space(18)]
     public bool enableGroundingDebugging = false, enableMovementDebugging = false, enableMouseAndCameraDebugging = false, enableVaultDebugging = false;
     #endregion
+
     void Start(){
    
         
@@ -1515,14 +1518,13 @@ public class SUPERCharacterAIO : MonoBehaviour{
         }
         #endif
     }
-    #endif
-    #endregion
+#endif
+        #endregion
+    }
 
-}
 
-
-#region Classes and Enums
-[System.Serializable]
+    #region Classes and Enums
+    [System.Serializable]
 public class GroundInfo{
     public bool isInContactWithGround, isGettingGroundInfo, potentialStair;
     public float groundAngleMultiplier_Inverse = 1, groundAngleMultiplier_Inverse_persistent = 1, groundAngleMultiplier = 0, groundAngle, groundAngle_Raw, playerGroundPosition, groundRawYPosition;
@@ -1573,7 +1575,6 @@ public interface ICollectable{
     void Collect();
 }
 #endregion
-
 
 #region Editor Scripting
 #if UNITY_EDITOR
