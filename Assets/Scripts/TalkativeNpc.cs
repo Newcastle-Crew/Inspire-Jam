@@ -1,12 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
 public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public Transform idleMovePointsParent;
     Rigidbody rb;
     AudioSource audio_source;
+
+    public Text stateHint;
 
     public enum States { Still, IdleMoving, Talking, InvestigatingSus }
 
@@ -98,10 +101,23 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     }
 
     public void Shot(float damage, Vector3 point, Vector3 dir) {
+        var state = GameState.Instance;
+        var player = Player.Instance;
+
         health -= damage;
         rb.AddForceAtPosition(dir * 20.3f + Vector3.up * 6f, point, ForceMode.Impulse);
 
         if (health <= 0f) {
+            if (stateHint) stateHint.text = "死";
+
+            if (state.hitmanTarget == this) {
+                state.winnable = true;
+
+                if (player.inside_exit_point) {
+                    player.WinGame();
+                }
+            }
+
             rb.constraints = RigidbodyConstraints.None;
             GameState.Instance.npcs.Remove(this);
             Destroy(this);
@@ -319,9 +335,10 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 if (knowsSusIdentity) sus_pos = player_pos;
                 else sus_pos = susSoundPosition;
 
-                var error = sus_pos - transform.position;
+                var error = sus_pos - eyePos;
+                Debug.Log(error);
                 var wanted_angle = Quaternion.LookRotation(error, Vector3.up);
-                target_angle = wanted_angle.y;
+                target_angle = wanted_angle.eulerAngles.y;
                 useTargetAngle = true;
 
                 if (error.x*error.x+error.z*error.z > target_moving_acceptable_error*target_moving_acceptable_error) {
@@ -401,6 +418,20 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 rb.AddTorque(0f, Mathf.Sign(angular_error) * rotation_speed, 0f);
             } else {
                 rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
+            }
+        }
+
+        if (stateHint) {
+            stateHint.canvas.transform.LookAt(player_pos);
+
+            stateHint.text = "";
+
+            if (susLevel > Sussy.NONE) {
+                stateHint.text = (knowsSusIdentity ? "!" : "?") + susLevel.ToString();
+            }
+
+            if (canSeePlayer) {
+                stateHint.text += "目";
             }
         }
     }

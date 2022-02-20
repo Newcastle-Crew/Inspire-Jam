@@ -1,14 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(SUPERCharacter.SUPERCharacterAIO))]
 public class Player : MonoBehaviour
 {
     public static Player Instance;
 
+    public bool inside_exit_point = false;
+
     public AudioSource susSoundTemp;
     SUPERCharacter.SUPERCharacterAIO cam;
+
+    public GameObject killTargetBeforeExitPrompt;
 
     public enum ItemKind { None, Gun }
 
@@ -72,5 +78,57 @@ public class Player : MonoBehaviour
                 } break;
             }
         }
+    }
+
+    void OnTriggerExit(Collider other) {
+        var exit_door = other.GetComponent<ExitDoor>();
+        if (!exit_door) return;
+
+        inside_exit_point = false;
+
+        if(killTargetBeforeExitPrompt) {
+            killTargetBeforeExitPrompt.SetActive(false);
+        } else {
+            Debug.LogError("killTargetBeforeExitingPrompt isn't set");
+        }
+    }
+
+    void OnTriggerEnter(Collider other) {
+        var exit_door = other.GetComponent<ExitDoor>();
+        if (!exit_door) return;
+
+        inside_exit_point = true;
+
+        if (!GameState.Instance.winnable) {
+            // TODO: Flash a message on screen that you haven't killed the target yet.
+            Debug.Log("Not winning!");
+            if(killTargetBeforeExitPrompt) {
+                killTargetBeforeExitPrompt.SetActive(true);
+            } else {
+                Debug.LogError("killTargetBeforeExitingPrompt isn't set");
+            }
+            return;
+        }
+
+        WinGame();
+    }
+
+    IEnumerator WinGameCountdown() {
+        // Hack: I don't like this that much.
+        killTargetBeforeExitPrompt.GetComponentInChildren<Text>().text = "Good work!";
+        killTargetBeforeExitPrompt.SetActive(true);
+
+        yield return new WaitForSeconds(1f);
+
+        SUPERCharacter.SUPERCharacterAIO.Instance.EnterGUIMode();
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    bool winning_game = false;
+    public void WinGame() {
+        // If you're already winning, don't win again!
+        if (winning_game) return;
+        winning_game = true;
+        StartCoroutine("WinGameCountdown");
     }
 }

@@ -15,6 +15,9 @@ public class GameState : MonoBehaviour
     public float sprint_susness = 0.2f;
     public float note_susness = 0.3f;
 
+    public bool winnable = false;
+    public TalkativeNpc hitmanTarget = null;
+
     SUPERCharacter.SUPERCharacterAIO character;
 
     public List<TalkativeNpc> npcs;
@@ -37,6 +40,11 @@ public class GameState : MonoBehaviour
     void Awake() {
         Instance = this;
         npcs = new List<TalkativeNpc>();
+
+        if (!hitmanTarget) {
+            Debug.LogError("Please set hitmanTarget to something");
+            winnable = true;
+        }
     }
 
     void Update() {
