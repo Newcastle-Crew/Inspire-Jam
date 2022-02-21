@@ -72,7 +72,7 @@ public class Player : MonoBehaviour
                                 npc.Shot(0.2f, hit_point, delta.normalized);
                             }
                         } else {
-                            Debug.Assert(layer == 3, "Nothing but an npc should have a head/body component");
+                            // It might not have the npc component if you're shooting on an already dead corpse...
                         }
                     }
                 } break;

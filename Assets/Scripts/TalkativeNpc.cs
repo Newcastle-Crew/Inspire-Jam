@@ -6,7 +6,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
 public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public Transform idleMovePointsParent;
-    Rigidbody rb;
+    public Rigidbody rb;
     AudioSource audio_source;
 
     public Text stateHint;
@@ -30,6 +30,8 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public AudioClip[] realize_culprit;
 
     public float susLevelSpeedIncrease = 0.4f;
+
+    public Behaviour defaultBehaviour;
 
     // When they're shot, if they don't die in one shot, they will scream!
     public float health = 1f;
@@ -151,12 +153,14 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         int susLevel = Sussy.ActionToSus(action);
         var newSusTime = (float)(susLevel *susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
 
-        if (this.susLevel > susLevel) {
+        // If we're in murder mode, anything you do suspiciously _will_ get you caught. Running in the hallway for example
+        // is normally just weird behaviour, but when they've heard some murder, it's dead serious.
+        if (this.susLevel != Sussy.MURDER && this.susLevel > susLevel) {
             UpdateSusness(newSusTime, knowsSusIdentity, this.susLevel, action);
             return;
         }
 
-        UpdateSusness(newSusTime, true, susLevel, action);
+        UpdateSusness(newSusTime, true, Mathf.Max(susLevel, this.susLevel), action);
     }
 
     void Exclaim(AudioClip[] clips) {
@@ -239,6 +243,35 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     }
 
     void FixedUpdate() {
+        defaultBehaviour.Run(this);
+
+        // TODO: What to do about this?
+        var angular_error = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, target_angle);
+        const float MAX_ANGULAR_ERROR = 10f;
+        if (Mathf.Abs(angular_error) > MAX_ANGULAR_ERROR) {
+            rb.AddTorque(0f, Mathf.Sign(angular_error) * rotation_speed, 0f);
+        } else {
+            rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
+        }
+
+        if (stateHint) {
+            var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
+            var player_pos = player_cam.eyePosition;
+
+            stateHint.canvas.transform.LookAt(player_pos);
+
+            stateHint.text = "";
+
+            if (susLevel > Sussy.NONE) {
+                stateHint.text = (knowsSusIdentity ? "!" : "?") + susLevel.ToString();
+            }
+
+            if (canSeePlayer) {
+                stateHint.text += "目";
+            }
+        }
+
+        /*
         var state = GameState.Instance;
         var eyePos = EyePosition();
         var player = Player.Instance;
@@ -250,33 +283,33 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
         // Visibility
         {
-            var delta = eyePos - player_pos;
-            var magSqr = delta.sqrMagnitude;
-
             canSeePlayer = false;
 
-            const float maxRadius = 50f;
-            if(magSqr < maxRadius*maxRadius) {
-                int mask = 1 << 3;
-                const float SIGHT_SIZE = 0.25f;
-                
+            int mask = 1 << 3;
+            const float SIGHT_SIZE = 0.25f;
+            
+            float delta_angle;
+            {
+                var delta = player_pos - eyePos;
                 var look_rotation = Quaternion.LookRotation(delta, Vector3.up);
-                var delta_angle = Mathf.DeltaAngle(look_rotation.eulerAngles.y, 180f + transform.rotation.eulerAngles.y);
+                delta_angle = Mathf.DeltaAngle(look_rotation.eulerAngles.y, transform.rotation.eulerAngles.y);
+            }
 
-                var fov = susLevel > Sussy.NONE ? engagedFov : normalFov;
+            var fov = susLevel > Sussy.NONE ? engagedFov : normalFov;
 
-                if (Mathf.Abs(delta_angle) <= fov) {
-                    if (!player_cam.isCrouching) {
-                        // We try three different raycasts when you're standing up, so we don't miss the player if we should be seeing them
-                        for (var i=0; i<3&&!canSeePlayer; i++) {
-                            if(!Physics.SphereCast(player_pos + Vector3.up * (float)i * 0.3f, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
-                                canSeePlayer = true;
-                            }
-                        }
-                    } else {
-                        if(!Physics.SphereCast(player_pos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
+            if (Mathf.Abs(delta_angle) <= fov) {
+                if (!player_cam.isCrouching) {
+                    // We try three different raycasts when you're standing up, so we don't miss the player if we should be seeing them
+                    for (var i=0; i<3&&!canSeePlayer; i++) {
+                        var delta = (player_pos + Vector3.up * (float)i * 0.3f) - eyePos;
+                        if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
                             canSeePlayer = true;
                         }
+                    }
+                } else {
+                    var delta = player_pos - eyePos;
+                    if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
+                        canSeePlayer = true;
                     }
                 }
             }
@@ -410,30 +443,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 }
             } break;
         }
-
-        if (useTargetAngle) {
-            var angular_error = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, target_angle);
-            const float MAX_ANGULAR_ERROR = 10f;
-            if (Mathf.Abs(angular_error) > MAX_ANGULAR_ERROR) {
-                rb.AddTorque(0f, Mathf.Sign(angular_error) * rotation_speed, 0f);
-            } else {
-                rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
-            }
-        }
-
-        if (stateHint) {
-            stateHint.canvas.transform.LookAt(player_pos);
-
-            stateHint.text = "";
-
-            if (susLevel > Sussy.NONE) {
-                stateHint.text = (knowsSusIdentity ? "!" : "?") + susLevel.ToString();
-            }
-
-            if (canSeePlayer) {
-                stateHint.text += "目";
-            }
-        }
+        */
     }
 
     void OnDrawGizmos() {
