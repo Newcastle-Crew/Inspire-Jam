@@ -3,95 +3,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public class Brain {
+    public float susLevel = 0f;
+    public float stressLevel = 0f;
+}
+
 [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
 public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public Transform idleMovePointsParent;
     public Rigidbody rb;
-    AudioSource audio_source;
-
-    public Text stateHint;
-
-    public enum States { Still, IdleMoving, Talking, InvestigatingSus }
-
-    public States current = States.Still;
-
-    public List<States> state_stack;
-
-    public AudioClip[] repeated_sound_rude;
-    public AudioClip[] repeated_sound_murder;
-
-    public AudioClip[] fallback_attention_grab;
-    public AudioClip[] fallback_rude;
-    public AudioClip[] fallback_murder;
-
-    public AudioClip[] hear_fart;
-    public AudioClip[] seen_running;
-    public AudioClip[] seen_reading;
-    public AudioClip[] realize_culprit;
-
-    public float susLevelSpeedIncrease = 0.4f;
-
-    public Behaviour defaultBehaviour;
-
-    // When they're shot, if they don't die in one shot, they will scream!
+    public Brain brain;
     public float health = 1f;
-
-    // States.InvestigatingSus
-    public float target_moving_acceptable_error = 2f;
-    public float target_moving_speed = 8f;
-
-    // States.IdleMoving | States.Talking
     public float rotation_speed = 1f;
     public float target_angle = 0f;
-
-    public float normalFov = 60f;
-    public float engagedFov = 80f;
-
-    // States.Still
-    float still_timer = 1.3f;
-
-    // States.IdleMoving
-    public float idle_moving_speed = 1.0f;
-    public float idle_moving_acceptable_error = 2f;
-    Transform idle_moving_target;
-
-    Vector3 susSoundPosition;
-
-    public int susLevel = Sussy.NONE;
-    public bool knowsSusIdentity = false;
-    public float susTimer = 0f;
-    public float susTimeScalar = 1f;
-    float timeBeingSus = 0f;
-    float timeSinceExclamation = 0f;
-    float exclamationTimingRandom = 0f;
-
+    public float fov = 60f;
     public bool canSeePlayer = false;
-
-    const float TIME_BEING_SUS_UNTIL_EXCLAMATION = 1.0f;
-
     public Vector3 eye_offset = Vector2.up * 0.6f;
-
-    public string interactionName { get => "話す"; }
+    public string interactionName { get => "Talk"; }
     public string[] conversation;
 
-    const float SIGHT_DISTANCE = 20f;
-    const float SIGHT_SIZE = 1.0f;
+    public Behaviour defaultBehaviour;
+    public Behaviour stressBehaviour;
+    public Behaviour defaultImpulseHandler;
+    public Behaviour susBehaviour;
 
-    const float GLOBAL_SUS_TIME_SCALAR = 2f;
+    AudioSource audio_source;
+    List<Behaviour> behaviourStack;
 
     void Awake() {
         rb = GetComponent<Rigidbody>();
         audio_source = GetComponent<AudioSource>();
 
-        state_stack = new List<States>();
-
         target_angle = transform.rotation.eulerAngles.y;
+
+        behaviourStack = new List<Behaviour>();
+        brain = new Brain();
     }
 
     void Start() {
         var game_state = GameState.Instance;
         game_state.npcs.Add(this);
-        exclamationTimingRandom = Random.value;
     }
 
     public Vector3 EarPosition() {
@@ -102,6 +53,10 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         return transform.position + eye_offset;
     }
 
+    public void SetSusLevel(float susLevel) {
+        this.brain.susLevel = Mathf.Max(this.brain.susLevel, susLevel);
+    }
+
     public void Shot(float damage, Vector3 point, Vector3 dir) {
         var state = GameState.Instance;
         var player = Player.Instance;
@@ -109,8 +64,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         health -= damage;
         rb.AddForceAtPosition(dir * 20.3f + Vector3.up * 6f, point, ForceMode.Impulse);
 
+        var impulse = new GenericSound();
         if (health <= 0f) {
-            if (stateHint) stateHint.text = "死";
+            impulse.is_auditorial = false;
 
             if (state.hitmanTarget == this) {
                 state.winnable = true;
@@ -123,127 +79,94 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             rb.constraints = RigidbodyConstraints.None;
             GameState.Instance.npcs.Remove(this);
             Destroy(this);
-        } else {
-            GameState.SusSound(transform.position, 14f, 20f, Sussy.ActionKind.ShotScream);
         }
+
+        impulse.susLevel = 4f;
+        impulse.audio_radius = 40;
+        GameState.CreateImpulse(transform.position, impulse);
     }
 
-    public void HearSusSound(Vector3 position, Sussy.ActionKind action) {
-        if (health < 0f) return;
+    public void SetBehaviour(Behaviour behaviour) {
+        behaviour.wantsToExit = false;
 
-        int susLevel = Sussy.ActionToSus(action);
-
-        var newSusTime = (float)(susLevel * susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
-        if (this.susLevel > susLevel) {
-            UpdateSusness(newSusTime, knowsSusIdentity, this.susLevel, action);
-            return;
+        if (behaviourStack.Count > 0) {
+            var previously_running = behaviourStack[behaviourStack.Count - 1];
+            var continue_after_yield = previously_running.Yield();
+            if (!continue_after_yield) {
+                previously_running.Stop();
+                behaviourStack.RemoveAt(behaviourStack.Count - 1);
+            }
         }
 
-        // Gets distracted from what the player did, since it heard something worse.
-        var new_knows_sus_identity = false;
-        if (knowsSusIdentity && susLevel == this.susLevel) {
-            new_knows_sus_identity = knowsSusIdentity;
-        }
-
-        susSoundPosition = position;
-        UpdateSusness(newSusTime, new_knows_sus_identity, susLevel, action);
+        behaviourStack.Add(behaviour);
     }
 
-    public void SeeSusAction(Sussy.ActionKind action) {
-        int susLevel = Sussy.ActionToSus(action);
-        var newSusTime = (float)(susLevel *susLevel) * susTimeScalar * GLOBAL_SUS_TIME_SCALAR;
+    public void GiveImpulse(ImpulseInfo info, Impulse impulse) {
+        Debug.Log("Got impulse");
 
-        // If we're in murder mode, anything you do suspiciously _will_ get you caught. Running in the hallway for example
-        // is normally just weird behaviour, but when they've heard some murder, it's dead serious.
-        if (this.susLevel != Sussy.MURDER && this.susLevel > susLevel) {
-            UpdateSusness(newSusTime, knowsSusIdentity, this.susLevel, action);
-            return;
+        for (int i = this.behaviourStack.Count - 1; i >= 0; i--) {
+            var behaviour = this.behaviourStack[i];
+            if (behaviour.HandleImpulse(info, impulse)) {
+                // If we handle the behaviour, we want to cut the rest of the behaviours.
+                for (int i2 = this.behaviourStack.Count - 1; i2 > i; i2--) {
+                    this.behaviourStack[i2].Stop();
+                    this.behaviourStack.RemoveAt(i2);
+                }
+
+                return;
+            }
         }
 
-        UpdateSusness(newSusTime, true, Mathf.Max(susLevel, this.susLevel), action);
-    }
+        // If it's not handled by any existing behaviour, add a new one
+        {
+            Debug.Log("Adding default handler");
+            var behaviour = this.defaultImpulseHandler;
+            var result = behaviour.HandleImpulse(info, impulse, is_source_impulse: true);
+            Debug.Assert(result, "The default behaviour handler should handle any impulse");
 
-    void Exclaim(AudioClip[] clips) {
-        if (clips.Length > 0) {
-            var clip = clips[Random.Range(0, clips.Length)];
-            audio_source.PlayOneShot(clip);
-            timeSinceExclamation = 0f;
-            exclamationTimingRandom = Random.value;
-        } else {
-            Debug.LogWarning("No sound clips");
-        }
-    }
-
-    void UpdateSusness(float newSusTimer, bool newKnowsSusIdentity, int newSusLevel, Sussy.ActionKind action) {
-        var increase = newSusLevel - susLevel;
-
-        if (newSusLevel > Sussy.ATTENTION_GRAB) {
-            current = States.InvestigatingSus;
-        }
-
-        susTimer = newSusTimer;
-        susLevel = newSusLevel;
-
-        bool big_surprise = increase > 2;
-        if (!big_surprise && !knowsSusIdentity && newKnowsSusIdentity && timeBeingSus > TIME_BEING_SUS_UNTIL_EXCLAMATION) {
-            Exclaim(realize_culprit);
-        }
-        knowsSusIdentity = newKnowsSusIdentity;
-
-        if (big_surprise) {
-            BigSurprise(action);
-        } else if (increase > 0) {
-            SmallSurprise(action);
-        }
-    }
-
-    AudioClip[] GetActionSoundQueues(Sussy.ActionKind action) {
-        AudioClip[] clips = new AudioClip[0];
-        switch (action) {
-            case Sussy.ActionKind.Run: {
-                clips = seen_running;
-            } break;
-            case Sussy.ActionKind.Fart: {
-                clips = hear_fart;
-            } break;
-            case Sussy.ActionKind.Reading: {
-                clips = seen_reading;
-            } break;
-        }
-
-        // Fallbacks, in case no sound was defined.
-        switch (Sussy.ActionToSus(action)) {
-            case Sussy.MURDER:
-                if(clips.Length > 0) break;
-                clips = fallback_murder;
-                goto case Sussy.RUDE;
-            case Sussy.RUDE:
-                if(clips.Length > 0) break;
-                clips = fallback_rude;
-                goto case Sussy.ATTENTION_GRAB;
-            case Sussy.ATTENTION_GRAB:
-                if(clips.Length > 0) break;
-                clips = fallback_attention_grab;
-                break;
-        }
-
-        return clips;
-    }
-
-    void BigSurprise(Sussy.ActionKind action) {
-        var sounds = GetActionSoundQueues(action);
-        Exclaim(sounds);
-    }
-
-    void SmallSurprise(Sussy.ActionKind action) {
-        if (timeSinceExclamation > 1.0f) {
-            var sounds = GetActionSoundQueues(action);
-            Exclaim(sounds);
+            SetBehaviour(behaviour);
         }
     }
 
     void FixedUpdate() {
-        defaultBehaviour.Run(this);
+        var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
+        var player_pos = player_cam.eyePosition;
+        var player = Player.Instance;
+
+        if (brain.stressLevel > 0f) {
+            brain.stressLevel -= Time.fixedDeltaTime * 0.2f;
+        }
+
+        canSeePlayer = CanSee(player_pos, !player_cam.isCrouching);
+        if (canSeePlayer) {
+            if (player.holding == Player.ItemKind.Gun) {
+                SetSusLevel(4f);
+            }
+
+            // If they're suspicious, increase stress level!
+            var oldStressLevel = brain.stressLevel;
+            brain.stressLevel = Mathf.Max(brain.susLevel, brain.stressLevel);
+
+            if (oldStressLevel < brain.stressLevel + 1f) {
+                // TODO: Exclaim!
+            }
+        }
+
+        if (behaviourStack.Count == 0) {
+            if (susBehaviour && brain.susLevel > 1f && canSeePlayer) {
+                SetBehaviour(susBehaviour);
+            } else if (stressBehaviour && brain.stressLevel > 1f) {
+                stressBehaviour.Run(this);
+            } else if (defaultBehaviour) {
+                defaultBehaviour.Run(this);
+            }
+        } else {
+            var currentBehaviour = behaviourStack[behaviourStack.Count - 1];
+            currentBehaviour.Run(this);
+            if (currentBehaviour.wantsToExit) {
+                behaviourStack.RemoveAt(behaviourStack.Count - 1);
+            }
+        }
 
         // TODO: What to do about this?
         var angular_error = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, target_angle);
@@ -253,197 +176,35 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         } else {
             rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
         }
+    }
 
-        if (stateHint) {
-            var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
-            var player_pos = player_cam.eyePosition;
-
-            stateHint.canvas.transform.LookAt(player_pos);
-
-            stateHint.text = "";
-
-            if (susLevel > Sussy.NONE) {
-                stateHint.text = (knowsSusIdentity ? "!" : "?") + susLevel.ToString();
-            }
-
-            if (canSeePlayer) {
-                stateHint.text += "目";
-            }
-        }
-
-        /*
-        var state = GameState.Instance;
+    public bool CanSee(Vector3 point, bool big = false) {
         var eyePos = EyePosition();
-        var player = Player.Instance;
-        var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
-        var player_pos = player_cam.eyePosition;
-        bool useTargetAngle = false;
 
-        timeSinceExclamation += Time.fixedDeltaTime;
+        int mask = 1 << 3;
+        const float SIGHT_SIZE = 0.25f;
+        
+        var look_rotation = Quaternion.LookRotation(point - eyePos, Vector3.up);
+        var delta_angle = Mathf.DeltaAngle(look_rotation.eulerAngles.y, transform.rotation.eulerAngles.y);
 
-        // Visibility
-        {
-            canSeePlayer = false;
+        if (Mathf.Abs(delta_angle) > fov) return false;
 
-            int mask = 1 << 3;
-            const float SIGHT_SIZE = 0.25f;
-            
-            float delta_angle;
-            {
-                var delta = player_pos - eyePos;
-                var look_rotation = Quaternion.LookRotation(delta, Vector3.up);
-                delta_angle = Mathf.DeltaAngle(look_rotation.eulerAngles.y, transform.rotation.eulerAngles.y);
-            }
-
-            var fov = susLevel > Sussy.NONE ? engagedFov : normalFov;
-
-            if (Mathf.Abs(delta_angle) <= fov) {
-                if (!player_cam.isCrouching) {
-                    // We try three different raycasts when you're standing up, so we don't miss the player if we should be seeing them
-                    for (var i=0; i<3&&!canSeePlayer; i++) {
-                        var delta = (player_pos + Vector3.up * (float)i * 0.3f) - eyePos;
-                        if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
-                            canSeePlayer = true;
-                        }
-                    }
-                } else {
-                    var delta = player_pos - eyePos;
-                    if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
-                        canSeePlayer = true;
-                    }
+        if (big) {
+            // We try three different raycasts when you're standing up, so we don't miss the player if we should be seeing them
+            for (var i=0; i<3; i++) {
+                var delta = (point + Vector3.up * (float)i * 0.3f) - eyePos;
+                if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
+                    return true;
                 }
+            }
+        } else {
+            var delta = point - eyePos;
+            if(!Physics.SphereCast(eyePos, SIGHT_SIZE, delta, out var _hit_info, delta.magnitude, mask)) {
+                return true;
             }
         }
 
-        // 
-        // - Sus level things
-        //
-        {
-            if (susLevel > Sussy.NONE) {
-                susTimer -= Time.fixedDeltaTime;
-                timeBeingSus += Time.fixedDeltaTime;
-                if (susTimer < 0f) {
-                    susLevel = Sussy.NONE;
-                }
-            } else {
-                timeBeingSus = 0f;
-            }
-
-            if (susLevel >= Sussy.RUDE) {
-                if (timeSinceExclamation > exclamationTimingRandom * 2f + 1.4f) {
-                    var sounds = new AudioClip[0];
-                    if (susLevel == Sussy.MURDER) {
-                        sounds = repeated_sound_murder;
-                    }
-                    if (sounds.Length == 0) sounds = repeated_sound_rude;
-                    Exclaim(sounds);
-                }
-            }
-
-            if (canSeePlayer && player.holding == Player.ItemKind.Gun) {
-                SeeSusAction(Sussy.ActionKind.HoldingGun);
-            }
-
-            if (canSeePlayer && player_cam.isSprinting) {
-                SeeSusAction(Sussy.ActionKind.Run);
-            }
-
-            if (canSeePlayer && state.current == GameState.States.InNote) {
-                SeeSusAction(Sussy.ActionKind.Reading);
-            }
-        }
-
-        //
-        // States
-        //
-        switch (current) {
-            case States.InvestigatingSus: {
-                if (susLevel == Sussy.NONE) {
-                    current = States.Still;
-                    still_timer = 0f;
-                    break;
-                }
-
-                Vector3 sus_pos;
-                if (knowsSusIdentity) sus_pos = player_pos;
-                else sus_pos = susSoundPosition;
-
-                var error = sus_pos - eyePos;
-                Debug.Log(error);
-                var wanted_angle = Quaternion.LookRotation(error, Vector3.up);
-                target_angle = wanted_angle.eulerAngles.y;
-                useTargetAngle = true;
-
-                if (error.x*error.x+error.z*error.z > target_moving_acceptable_error*target_moving_acceptable_error) {
-                    rb.AddForce(error.normalized * target_moving_speed);
-                }
-            } break;
-            case States.Still: {
-                still_timer -= Time.fixedDeltaTime * (1f + (float)susLevel);
-
-                if (still_timer <= 0f) {
-                    int mask = (1 << 3) | (1 << 0);
-
-                    Transform FindGrazeTarget() {
-                        if (idleMovePointsParent == null) return null;
-
-                        var targets = new List<(float, Transform)>();
-                        var probSum = 0f;
-                        int childCount = idleMovePointsParent.childCount;
-                        for (var i=0; i<childCount; i++) {
-                            var child = idleMovePointsParent.GetChild(i);
-                            if (!child.gameObject.activeSelf) continue;
-
-                            var targetPos = child.position;
-                            if(!Physics.SphereCast(eyePos, SIGHT_SIZE, targetPos - eyePos, out var _unused, (targetPos - eyePos).magnitude, mask)) {
-                                float prob;
-                                prob = 1f;
-                                probSum += prob;
-
-                                targets.Add((prob, child));
-                            }
-                        }
-
-                        if (targets.Count == 0) return null;
-
-                        var moving_towards_pick = Random.Range(0f, probSum);
-                        foreach (var (prob, target) in targets) {
-                            moving_towards_pick -= prob;
-                            if (moving_towards_pick < 0f) return target;
-                        }
-                        
-                        return null;
-                    }
-
-                    var moving_towards = FindGrazeTarget();
-                    if (moving_towards != null) {
-                        idle_moving_target = moving_towards;
-                        moving_towards.gameObject.SetActive(false);
-                        current = States.IdleMoving;
-                    } else {
-                        still_timer = Random.Range(2f, 4f);
-                    }
-                }
-            } break;
-            case States.Talking: {
-                useTargetAngle = true;
-            } break;
-            case States.IdleMoving: {
-                var error = idle_moving_target.position - transform.position;
-                rb.AddForce(error.normalized * idle_moving_speed);
-
-                var look_rotation = Quaternion.LookRotation(error, Vector3.up);
-                target_angle = look_rotation.eulerAngles.y;
-                useTargetAngle = true;
-
-                if (error.x*error.x+error.z*error.z < idle_moving_acceptable_error*idle_moving_acceptable_error) {
-                    still_timer = Random.Range(1f, 5f);
-                    idle_moving_target.gameObject.SetActive(true);
-                    current = States.Still;
-                }
-            } break;
-        }
-        */
+        return false;
     }
 
     void OnDrawGizmos() {

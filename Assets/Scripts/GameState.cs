@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class GameState : MonoBehaviour
 {
-    public enum States { Playing, InNote, Conversing, InInventory }
+    public enum States { Playing, InNote, Conversing, InInventory, Captured }
 
     public States current = States.Playing;
 
@@ -34,6 +34,7 @@ public class GameState : MonoBehaviour
     string[] conversation;
     int conversation_index;
     TalkativeNpc talking_to;
+    public Talk talk_behaviour;
 
     bool singleFrameLock = false;
 
@@ -86,36 +87,22 @@ public class GameState : MonoBehaviour
             conversation_text.text = conversation[conversation_index];
             conversation_text.gameObject.SetActive(true);
         } else {
-            conversation_text.gameObject.SetActive(false);
             DisengageConversation();
         }
     }
 
-    public static void SusSound(Vector3 pos, float distinctRadius, float indistinctRadius, Sussy.ActionKind action) {
+    public static void CreateImpulse(Vector3 pos, Impulse impulse) {
         var state = Instance;
 
-        // Find all the NPC:s within the radius that may hear the sound. Will scale with the npc:s hearing factor.
         foreach(var npc in state.npcs) {
-            var earPos = npc.EarPosition();
-            var delta = earPos - pos;
-            var magSqr = delta.sqrMagnitude;
+            var info = new ImpulseInfo();
+            info.pos = pos;
+            info.audible = impulse.is_auditorial && (npc.EarPosition() - pos).sqrMagnitude < impulse.audio_radius * impulse.audio_radius;
+            info.visible = impulse.is_visual && npc.CanSee(pos);
 
-            if(magSqr < distinctRadius*distinctRadius) {
-                // Audible
-                npc.HearSusSound(pos, action);
-            } else if(delta.sqrMagnitude < indistinctRadius*indistinctRadius) {
-                npc.HearSusSound(pos, action);
-            }
-        }
-    }
+            if (!info.audible && !info.visible) continue;
 
-    public static void SusAction(Sussy.ActionKind action) {
-        var pos = SUPERCharacter.SUPERCharacterAIO.Instance.eyePosition;
-        var state = Instance;
-        foreach(var npc in state.npcs) {
-            if (npc.canSeePlayer) {
-                npc.SeeSusAction(action);
-            }
+            npc.GiveImpulse(info, impulse);
         }
     }
 
@@ -140,9 +127,10 @@ public class GameState : MonoBehaviour
         state.current = States.Conversing;
         state.singleFrameLock = true;
 
-        npc.state_stack.Add(npc.current);
-        npc.current = TalkativeNpc.States.Talking;
         npc.target_angle = 180f + look_towards.eulerAngles.y;
+
+        state.talk_behaviour.wantsToExit = false;
+        npc.SetBehaviour(state.talk_behaviour);
 
         state.talking_to = npc;
         state.conversation = conversation;
@@ -157,17 +145,26 @@ public class GameState : MonoBehaviour
         Debug.Assert(state != null);
         Debug.Assert(playerCamera != null);
 
+        state.conversation_text.gameObject.SetActive(false);
+        state.talk_behaviour.wantsToExit = true;
+
         if(state.current != States.Conversing) {
-            Debug.LogError("Cannot disengage conversation while not in a conversation");
+            Debug.Log("Disengaged conversation while not in one.");
             return;
         }
 
         playerCamera.ExitGUIMode();
 
-        state.talking_to.current = state.talking_to.state_stack[state.talking_to.state_stack.Count - 1];
-        state.talking_to.state_stack.RemoveAt(state.talking_to.state_stack.Count - 1);
         state.talking_to = null;
         state.current = States.Playing;
+    }
+
+    public static void CapturePlayer() {
+        if (Instance.current != States.Captured) {
+            Player.Instance.LoseGame();
+        }
+
+        Instance.current = States.Captured;
     }
 
     public static void OpenInventory() {
