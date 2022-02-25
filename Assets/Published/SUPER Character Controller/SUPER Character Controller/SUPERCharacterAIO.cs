@@ -76,6 +76,11 @@ public class SUPERCharacterAIO : MonoBehaviour
     
     public static SUPERCharacterAIO Instance = null;
     public IInteractable interactHoveringOver = null;
+    public float interactTimer = 0f;
+    public float interactTimerSpeed = 1f;
+    
+    public GameObject interactBar;
+    public Transform interactCompletionBar;
 
     //Both
     Vector2 MouseXY;
@@ -616,10 +621,46 @@ public class SUPERCharacterAIO : MonoBehaviour
             if (interactNameText != null && newInteracting != null) {
                 interactNameText.text = newInteracting.interactionName;
             }
+
+            interactTimer = -1f;
+            if (interactBar) interactBar.SetActive(false);
         }
         interactHoveringOver = newInteracting;
-        if(interactInput && interactHoveringOver != null){
-            interactHoveringOver.Interact();
+
+        if (!Input.GetKey(KeyCode.E) && interactTimer > 0f) {
+            interactTimer = -1f;
+            if (interactBar) interactBar.SetActive(false);
+        }
+
+        bool short_circuit_interaction = false;
+        if (Input.GetKeyDown(KeyCode.E) && interactHoveringOver != null) {
+            var grabTime = interactHoveringOver.grabTime;
+            if (grabTime <= 0f) {
+                interactTimer = -1f;
+                interactHoveringOver.Interact();
+            } else {
+                interactTimer = 1f;
+                interactTimerSpeed = 1f / grabTime;
+
+                if (interactCompletionBar && interactBar) {
+                    interactCompletionBar.localScale = new Vector3(interactTimer, 1f, 1f);
+                    interactBar.SetActive(true);
+                }
+            }
+        }
+
+        if(Input.GetKey(KeyCode.E) && interactTimer >= 0f && interactHoveringOver != null){
+            interactTimer -= Time.deltaTime * interactTimerSpeed;
+            if (interactCompletionBar) {
+                interactCompletionBar.localScale = new Vector3(interactTimer, 1f, 1f);
+            }
+            
+            if (interactTimer < 0f || short_circuit_interaction) {
+                if (interactBar) {
+                    interactBar.SetActive(false);
+                }
+                interactHoveringOver.Interact();
+            }
         }
         #endregion
 
@@ -1193,7 +1234,6 @@ public class SUPERCharacterAIO : MonoBehaviour
     IEnumerator ApplyStance(float smoothSpeed, Stances newStance){
         currentStance = newStance;
         while(!Mathf.Approximately(capsule.height,currentStance==Stances.Standing? standingHeight : crouchingHeight)){
-        
             capsule.height = (smoothSpeed>0? Mathf.MoveTowards(capsule.height, currentStance==Stances.Standing? standingHeight : crouchingHeight, stanceTransitionSpeed*Time.fixedDeltaTime) :  currentStance==Stances.Standing? standingHeight : crouchingHeight);
             //may need to do this differently.
             if(currentStance == Stances.Crouching && currentGroundInfo.isGettingGroundInfo){
@@ -1569,6 +1609,7 @@ public enum Stances{Standing, Crouching}
 #region Interfaces
 public interface IInteractable{
     string interactionName { get; }
+    float grabTime { get; }
 
     bool Interact();
 }
@@ -1594,7 +1635,7 @@ public class SuperFPEditor : Editor{
     Texture2D BoxPanelColor;
     SUPERCharacterAIO t;
     SerializedObject tSO, SurvivalStatsTSO;
-    SerializedProperty interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats, interactIconBase, interactNameText;
+    SerializedProperty interactBar, interactCompletionBar, interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats, interactIconBase, interactNameText;
     static bool cameraSettingsFoldout = false, movementSettingFoldout = false, survivalStatsFoldout, footStepFoldout = false;
 
     public void OnEnable(){
@@ -1607,6 +1648,8 @@ public class SuperFPEditor : Editor{
         interactableLayer = tSO.FindProperty("interactableLayer"); 
         interactIconBase = tSO.FindProperty("interactIconBase"); 
         interactNameText = tSO.FindProperty("interactNameText"); 
+        interactBar = tSO.FindProperty("interactBar"); 
+        interactCompletionBar = tSO.FindProperty("interactCompletionBar"); 
         BoxPanelColor= new Texture2D(1, 1, TextureFormat.RGBAFloat, false);;
         BoxPanelColor.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.2f));
         BoxPanelColor.Apply();
@@ -2076,6 +2119,8 @@ public class SuperFPEditor : Editor{
         EditorGUILayout.PropertyField(interactableLayer,new GUIContent("Interactable Layers", "The Layers to check for interactables  on."));
         EditorGUILayout.PropertyField(interactIconBase,new GUIContent("Icon Base", "An icon that is activated once you're hovering over something interactable"));
         EditorGUILayout.PropertyField(interactNameText,new GUIContent("Name text", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
+        EditorGUILayout.PropertyField(interactBar,new GUIContent("Interact bar", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
+        EditorGUILayout.PropertyField(interactCompletionBar,new GUIContent("Interact Completion Bar", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
 
         EditorGUILayout.EndVertical();
         #endregion

@@ -12,14 +12,12 @@ public class Player : MonoBehaviour
     public GenericSound fart_impulse;
 
     public bool inside_exit_point = false;
-
     public AudioSource susSoundTemp;
     SUPERCharacter.SUPERCharacterAIO cam;
-
     public GameObject killTargetBeforeExitPrompt;
 
     public enum ItemKind { None, Gun }
-
+    
     public ItemKind holding = ItemKind.None;
 
     bool lost = false;

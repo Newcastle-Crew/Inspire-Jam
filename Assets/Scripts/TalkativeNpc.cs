@@ -20,6 +20,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public bool canSeePlayer = false;
     public Vector3 eye_offset = Vector2.up * 0.6f;
     public string interactionName { get => "Talk"; }
+    public float grabTime { get => -1f; }
     public string[] conversation;
 
     public Behaviour defaultBehaviour;
