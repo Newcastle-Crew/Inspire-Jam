@@ -9,16 +9,18 @@ public class Player : MonoBehaviour
 {
     public static Player Instance;
 
-    public bool inside_exit_point = false;
+    public GenericSound fart_impulse;
 
+    public bool inside_exit_point = false;
     public AudioSource susSoundTemp;
     SUPERCharacter.SUPERCharacterAIO cam;
-
     public GameObject killTargetBeforeExitPrompt;
 
     public enum ItemKind { None, Gun }
-
+    
     public ItemKind holding = ItemKind.None;
+
+    bool lost = false;
 
     void Awake() {
         Instance = this;
@@ -31,10 +33,13 @@ public class Player : MonoBehaviour
     }
 
     void Update() {
+        if (lost) return;
+
         if(Input.GetKeyDown(KeyCode.K)) {
             // Do sussy sound.
-            GameState.SusSound(transform.position, 7f, 14f, Sussy.ActionKind.Fart);
-            GameState.SusAction(Sussy.ActionKind.Fart);
+            GameState.CreateImpulse(transform.position, fart_impulse);
+            // GameState.SusSound(transform.position, 7f, 14f, Sussy.ActionKind.Fart);
+            // GameState.SusAction(Sussy.ActionKind.Fart);
             if(susSoundTemp) susSoundTemp.Play();
         }
 
@@ -113,6 +118,25 @@ public class Player : MonoBehaviour
         WinGame();
     }
 
+    bool game_ended = false;
+    IEnumerator LoseGameCountdown() {
+        // Hack: I don't like this that much.
+        killTargetBeforeExitPrompt.GetComponentInChildren<Text>().text = "Captured.";
+        killTargetBeforeExitPrompt.SetActive(true);
+
+        yield return new WaitForSeconds(2f);
+
+        SUPERCharacter.SUPERCharacterAIO.Instance.EnterGUIMode();
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void LoseGame() {
+        if (game_ended) return;
+        game_ended = true;
+        lost = true;
+        StartCoroutine("LoseGameCountdown");
+    }
+
     IEnumerator WinGameCountdown() {
         // Hack: I don't like this that much.
         killTargetBeforeExitPrompt.GetComponentInChildren<Text>().text = "Good work!";
@@ -124,11 +148,10 @@ public class Player : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    bool winning_game = false;
     public void WinGame() {
         // If you're already winning, don't win again!
-        if (winning_game) return;
-        winning_game = true;
+        if (game_ended) return;
+        game_ended = true;
         StartCoroutine("WinGameCountdown");
     }
 }

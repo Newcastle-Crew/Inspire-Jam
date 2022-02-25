@@ -6,14 +6,30 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Button))]
 public class InventoryButton : MonoBehaviour
 {
-    public Player.ItemKind item = Player.ItemKind.None;
+    public Item item;
 
     void Awake() {
         GetComponent<Button>().onClick.AddListener(Click);
     }
 
+    public void UpdateName() {
+        // Hack!
+        GetComponentInChildren<Text>().text = item.name;
+    }
+
     public void Click() {
-        Player.Equip(item);
-        GameState.CloseInventory();
+        if (item is Equippable equipItem) {
+            Player.Equip(equipItem.kind);
+            GameState.CloseInventory();
+        } else if (item is Key key) {
+            // TODO
+            Debug.LogWarning("The new key system is unimplemented");
+        } else if (item is NoteItem note) {
+            GameState.OpenNote(note);
+        } else if (item == null) {
+            Debug.LogError("Null item type!!!!");
+        } else {
+            Debug.LogWarning("Unhandled item type");
+        }
     }
 }

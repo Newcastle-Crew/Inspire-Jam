@@ -8,7 +8,7 @@ public class PatrolPath : MonoBehaviour {
         public int index;
     }
 
-    public ClosestPointResult ClosestPoint(Vector3 point, bool forward) {
+    public ClosestPointResult? ClosestPoint(Vector3 point, bool forward) {
         int childCount = transform.childCount;
         if (childCount < 1) {
             Debug.LogError("Cannot have a PatrolPath with less than one point.");
@@ -19,6 +19,7 @@ public class PatrolPath : MonoBehaviour {
         var closest = point;
         var closestSqr = 1000000000f;
         int index = 0;
+        bool hasAny = false;
 
         void TryAddingPoint(Vector3 newPoint, int newIndex) {
             var distance_sqr = (newPoint - point).sqrMagnitude;
@@ -28,6 +29,7 @@ public class PatrolPath : MonoBehaviour {
                     closestSqr = distance_sqr;
                     closest = newPoint;
                     index = newIndex;
+                    hasAny = true;
                 }
             }
         }
@@ -47,6 +49,8 @@ public class PatrolPath : MonoBehaviour {
 
             TryAddingPoint(linePoint, forward ? i-1 : i);
         }
+
+        if (!hasAny) return null;
 
         var result = new ClosestPointResult();
         result.position = closest;

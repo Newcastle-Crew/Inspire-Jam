@@ -5,9 +5,14 @@ using UnityEngine;
 public class Patrol :  Behaviour {
     public PatrolPath path;
 
-    int pathIndex = 0;
+    public Behaviour fallbackBehaviour;
+
+    int? pathIndex = 0;
 
     public bool forward = true;
+
+    float next_node_timer = 0f;
+    const float NODE_WAIT_TIME = 1.0f;
 
     const float MAX_ERROR_FOR_FOLLOW = 1.2f;
     const float MAX_ERROR_FOR_RECALCULATE = 5f;
@@ -18,18 +23,27 @@ public class Patrol :  Behaviour {
 
     float recalculated_time = -10000f;
 
-    public Vector3 GetDirection(Vector3 from_pos) {
+    public Vector3? GetDirection(Vector3 from_pos) {
         if (forceRecalculate) {
             forceRecalculate = false;
 
             var point = path.ClosestPoint(from_pos, forward);
-            pathIndex = point.index;
-            Debug.Log(pathIndex);
+
+            pathIndex = point?.index;
+        }
+
+        if (!pathIndex.HasValue) {
+            if ((Time.fixedTime - recalculated_time) > FAR_RECALCULATE_TIME) {
+                recalculated_time = Time.fixedTime;
+                forceRecalculate = true;
+            }
+
+            return null;
         }
 
         int childCount = path.transform.childCount;
-        var a = path.transform.GetChild(pathIndex).position;
-        var b = path.transform.GetChild(pathIndex + (forward ? 1 : -1)).position;
+        var a = path.transform.GetChild(pathIndex.Value).position;
+        var b = path.transform.GetChild(pathIndex.Value + (forward ? 1 : -1)).position;
 
         var (closestPos, t) = PatrolPath.ClosestLinePoint(a, b, from_pos);
         var error = closestPos - from_pos;
@@ -41,31 +55,47 @@ public class Patrol :  Behaviour {
             }
 
             return error.normalized;
-        } else {
-            if (t >= 1f) {
-                if (forward) {
-                    pathIndex += 1;
-                    if (pathIndex + 1 >= childCount) {
-                        pathIndex = childCount - 1;
-                        forward = false;
-                    }
-                } else if (!forward) {
-                    pathIndex -= 1;
-                    if (pathIndex <= 0) {
-                        forward = true;
-                        pathIndex = 0;
-                    }
-                }
-            }
-
-            return (b - a).normalized;
         }
+
+        if (t >= 1f) {
+            if (forward) {
+                pathIndex += 1;
+                if (pathIndex + 1 >= childCount) {
+                    pathIndex = childCount - 1;
+                    forward = false;
+                }
+
+                next_node_timer = NODE_WAIT_TIME;
+            } else if (!forward) {
+                pathIndex -= 1;
+                if (pathIndex <= 0) {
+                    forward = true;
+                    pathIndex = 0;
+                }
+
+                next_node_timer = NODE_WAIT_TIME;
+            }
+        }
+
+        return (b - a).normalized;
     }
 
     public override void Run(TalkativeNpc self) {
-        var dir = GetDirection(self.EyePosition());
-        self.rb.AddForce(dir * speed);
+        if (next_node_timer > 0f) {
+            next_node_timer -= Time.fixedDeltaTime;
+            return;
+        }
 
-        self.target_angle = Quaternion.LookRotation(dir, Vector3.up).eulerAngles.y;
+        var qDir = GetDirection(self.EyePosition());
+        
+        if (qDir is Vector3 dir) {
+            self.rb.AddForce(dir * speed);
+
+            self.target_angle = Quaternion.LookRotation(dir, Vector3.up).eulerAngles.y;
+        } else {
+            if (fallbackBehaviour) {
+                fallbackBehaviour.Run(self);
+            }
+        }
     }
 }
