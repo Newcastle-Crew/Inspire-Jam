@@ -13,7 +13,8 @@ public class Note : MonoBehaviour, SUPERCharacter.IInteractable {
     public string interactionName { get => "Interact"; }
 
     public bool Interact() {
-        GameState.OpenNote(this);
+        Debug.LogWarning("Old notes are deprecated");
+
         return true;
     }
 }

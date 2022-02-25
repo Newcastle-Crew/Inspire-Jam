@@ -26,7 +26,7 @@ public class GameState : MonoBehaviour
     public GameObject inventory_gui;
 
     // States.InNote
-    public Note reading;
+    public NoteItem reading;
     public NoteGUI note_gui;
 
     // States.Conversing
@@ -200,7 +200,7 @@ public class GameState : MonoBehaviour
         state.current = States.Playing;
     }
 
-    public static void OpenNote(Note note) {
+    public static void OpenNote(NoteItem note) {
         var state = Instance;
         var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
         var noteGui = state.note_gui;
@@ -209,19 +209,13 @@ public class GameState : MonoBehaviour
         Debug.Assert(noteGui != null);
         Debug.Assert(playerCamera != null);
         
-        if (state.current != States.Playing) {
-            Debug.LogError("Cannot open note while not in the playing state");
+        if (state.current != States.InInventory) {
+            Debug.LogError("Cannot open note while not in the inventory state");
             return;
         }
 
-        playerCamera.EnterGUIMode();
-
-        var position_delta = note.transform.position - playerCamera.transform.position;
-        var look_towards = Quaternion.LookRotation(position_delta, Vector3.up);
-        playerCamera.RotateView(look_towards.eulerAngles, true);
-
         noteGui.title.text = note.title;
-        noteGui.body.text = note.text;
+        noteGui.body.text = string.Join("\n", note.bodyText);
         noteGui.gameObject.SetActive(true);
         
         state.current = States.InNote;
@@ -243,8 +237,7 @@ public class GameState : MonoBehaviour
         }
 
         noteGui.gameObject.SetActive(false);
-        playerCamera.ExitGUIMode();
 
-        state.current = States.Playing;
+        state.current = States.InInventory;
     }
 }
