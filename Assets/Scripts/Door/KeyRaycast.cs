@@ -63,7 +63,7 @@ namespace KeySystem
         void CrosshairChange(bool on)
         {
             if (on && !doOnce)
-            { crosshair.color = Color.white; } // Makes the crosshair appear when player's looking at something interactable.
+            { crosshair.color = Color.red; } // Makes the crosshair appear when player's looking at something interactable.
 
             else
             {

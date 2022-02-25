@@ -8,7 +8,7 @@ public class Note : MonoBehaviour, SUPERCharacter.IInteractable {
 
     public float susness = 0.3f;
 
-    public string interactionName { get => "読む"; }
+    public string interactionName { get => "Interact"; }
 
     public bool Interact() {
         GameState.OpenNote(this);
