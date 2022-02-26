@@ -36,6 +36,12 @@ public class GameState : MonoBehaviour
     TalkativeNpc talking_to;
     public Talk talk_behaviour;
 
+    // Messages
+    float messageTimer = 0f;
+    int currentMessageId = 0;
+    public Text message;
+    public GameObject messageBase;
+
     bool singleFrameLock = false;
 
     void Awake() {
@@ -52,6 +58,13 @@ public class GameState : MonoBehaviour
         if (singleFrameLock) {
             singleFrameLock = false;
             return;
+        }
+
+        if (messageTimer > 0f) {
+            messageTimer -= Time.deltaTime;
+            if (messageTimer <= 0f) {
+                CloseMessage(currentMessageId);
+            }
         }
 
         switch (current) {
@@ -104,6 +117,22 @@ public class GameState : MonoBehaviour
 
             npc.GiveImpulse(info, impulse);
         }
+    }
+
+    public int PutMessage(string message, float time = -1f) {
+        var state = Instance;
+        state.message.text = message;
+        state.messageBase.SetActive(true);
+        state.messageTimer = time;
+
+        return ++state.currentMessageId;
+    }
+
+    public void CloseMessage(int id) {
+        var state = Instance;
+        if (state.currentMessageId != id) return;
+
+        state.messageBase.SetActive(false);
     }
 
     public static void EngageConversation(TalkativeNpc npc, string[] conversation, Vector3 face_offset) {

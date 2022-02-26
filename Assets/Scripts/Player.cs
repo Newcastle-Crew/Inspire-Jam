@@ -14,7 +14,6 @@ public class Player : MonoBehaviour
     public bool inside_exit_point = false;
     public AudioSource susSoundTemp;
     SUPERCharacter.SUPERCharacterAIO cam;
-    public GameObject killTargetBeforeExitPrompt;
 
     public enum ItemKind { None, Gun }
     
@@ -85,17 +84,14 @@ public class Player : MonoBehaviour
         }
     }
 
+    int message_id;
     void OnTriggerExit(Collider other) {
         var exit_door = other.GetComponent<ExitDoor>();
         if (!exit_door) return;
 
         inside_exit_point = false;
 
-        if(killTargetBeforeExitPrompt) {
-            killTargetBeforeExitPrompt.SetActive(false);
-        } else {
-            Debug.LogError("killTargetBeforeExitingPrompt isn't set");
-        }
+        GameState.Instance.CloseMessage(message_id);
     }
 
     void OnTriggerEnter(Collider other) {
@@ -105,13 +101,7 @@ public class Player : MonoBehaviour
         inside_exit_point = true;
 
         if (!GameState.Instance.winnable) {
-            // TODO: Flash a message on screen that you haven't killed the target yet.
-            Debug.Log("Not winning!");
-            if(killTargetBeforeExitPrompt) {
-                killTargetBeforeExitPrompt.SetActive(true);
-            } else {
-                Debug.LogError("killTargetBeforeExitingPrompt isn't set");
-            }
+            message_id = GameState.Instance.PutMessage("Kill target before exiting");
             return;
         }
 
@@ -120,9 +110,7 @@ public class Player : MonoBehaviour
 
     bool game_ended = false;
     IEnumerator LoseGameCountdown() {
-        // Hack: I don't like this that much.
-        killTargetBeforeExitPrompt.GetComponentInChildren<Text>().text = "Captured.";
-        killTargetBeforeExitPrompt.SetActive(true);
+        GameState.Instance.PutMessage("Captured.", 5f);
 
         yield return new WaitForSeconds(2f);
 
@@ -138,9 +126,7 @@ public class Player : MonoBehaviour
     }
 
     IEnumerator WinGameCountdown() {
-        // Hack: I don't like this that much.
-        killTargetBeforeExitPrompt.GetComponentInChildren<Text>().text = "Good work!";
-        killTargetBeforeExitPrompt.SetActive(true);
+        GameState.Instance.PutMessage("Good work!", 5f);
 
         yield return new WaitForSeconds(1f);
 
