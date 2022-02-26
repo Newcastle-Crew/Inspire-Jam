@@ -18,9 +18,16 @@ public class OpenLinks : MonoBehaviour
     public void LeonCredit()
     { Application.OpenURL("https://dxrkest.itch.io"); }
 
-    public void ScottCredit()
-    { Application.OpenURL("https://itch.io/profile/thefancyevil"); }
-
     public void PaulCredit()
     { Application.OpenURL("https://www.youtube.com/channel/UCRohkWLVomg92U9FMbK3hTg/videos"); }
+
+    public void HazelCredit()
+    { Application.OpenURL("https://www.artstation.com/hazelb"); }
+
+    /*
+
+    public void ScottCredit()
+    { Application.OpenURL("https://itch.io/profile/thefancyevil"); }
+   
+    */
 }
