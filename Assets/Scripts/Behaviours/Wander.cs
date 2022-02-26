@@ -81,6 +81,12 @@ public class Wander : Behaviour
 
                 if (error.x*error.x+error.z*error.z < ACCEPTABLE_ERROR*ACCEPTABLE_ERROR) {
                     still_timer = Random.Range(1f, 5f);
+
+                    var flags = target.GetComponent<PointOfInterestFlags>();
+                    if (flags != null) {
+                        if (flags.sameRotation) self.target_angle = target.rotation.eulerAngles.y;
+                    }
+                    
                     target.gameObject.SetActive(true);
                     current = States.Still;
                 }

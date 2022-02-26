@@ -79,9 +79,6 @@ public class SUPERCharacterAIO : MonoBehaviour
     public float interactTimer = 0f;
     public float interactTimerSpeed = 1f;
     
-    public GameObject interactBar;
-    public Transform interactCompletionBar;
-
     //Both
     Vector2 MouseXY;
     Vector2 viewRotVelRef;
@@ -281,8 +278,6 @@ public class SUPERCharacterAIO : MonoBehaviour
     #endif
     public float interactRange = 4;
     public LayerMask interactableLayer = (1 << 0) | (1 << 3);
-    public GameObject interactIconBase;
-    public Text interactNameText;
     public bool enableInteract = true;
 
     //
@@ -612,20 +607,28 @@ public class SUPERCharacterAIO : MonoBehaviour
         #endregion
 
         #region Interaction
-        var newInteracting = Interact();
-        if (newInteracting != interactHoveringOver) {
-            if (interactIconBase != null) {
-                interactIconBase.SetActive(newInteracting != null);
-            }
+        var interactHoveringOver = Interact();
 
-            if (interactNameText != null && newInteracting != null) {
-                interactNameText.text = newInteracting.interactionName;
-            }
+        if (interactHoveringOver != null) {
+            if (!interactHoveringOver.CanInteract()) interactHoveringOver = null;
+        }
 
+        var interactIconBase = GameState.Instance.interactIconBase;
+        var interactBar = GameState.Instance.interactBar;
+        var interactNameText = GameState.Instance.interactNameText;
+        var interactCompletionBar = GameState.Instance.interactCompletionBar;
+        if (interactIconBase != null) {
+            interactIconBase.SetActive(interactHoveringOver != null);
+        }
+
+        if (Input.GetKeyDown(KeyCode.E) || interactHoveringOver == null) {
             interactTimer = -1f;
             if (interactBar) interactBar.SetActive(false);
         }
-        interactHoveringOver = newInteracting;
+
+        if (interactNameText != null && interactHoveringOver != null) {
+            interactNameText.text = interactHoveringOver.interactionName;
+        }
 
         if (!Input.GetKey(KeyCode.E) && interactTimer > 0f) {
             interactTimer = -1f;
@@ -1611,6 +1614,7 @@ public interface IInteractable{
     string interactionName { get; }
     float grabTime { get; }
 
+    bool CanInteract();
     bool Interact();
 }
 
@@ -1635,7 +1639,7 @@ public class SuperFPEditor : Editor{
     Texture2D BoxPanelColor;
     SUPERCharacterAIO t;
     SerializedObject tSO, SurvivalStatsTSO;
-    SerializedProperty interactBar, interactCompletionBar, interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats, interactIconBase, interactNameText;
+    SerializedProperty interactableLayer, obstructionMaskField, groundLayerMask, groundMatProf, defaultSurvivalStats, currentSurvivalStats;
     static bool cameraSettingsFoldout = false, movementSettingFoldout = false, survivalStatsFoldout, footStepFoldout = false;
 
     public void OnEnable(){
@@ -1646,10 +1650,6 @@ public class SuperFPEditor : Editor{
         groundLayerMask = tSO.FindProperty("whatIsGround");
         groundMatProf = tSO.FindProperty("footstepSoundSet");
         interactableLayer = tSO.FindProperty("interactableLayer"); 
-        interactIconBase = tSO.FindProperty("interactIconBase"); 
-        interactNameText = tSO.FindProperty("interactNameText"); 
-        interactBar = tSO.FindProperty("interactBar"); 
-        interactCompletionBar = tSO.FindProperty("interactCompletionBar"); 
         BoxPanelColor= new Texture2D(1, 1, TextureFormat.RGBAFloat, false);;
         BoxPanelColor.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.2f));
         BoxPanelColor.Apply();
@@ -2117,10 +2117,6 @@ public class SuperFPEditor : Editor{
         #endif
         t.interactRange = EditorGUILayout.Slider(new GUIContent("Range","How far out can an interactable be from the player's position?"), t.interactRange, 0.1f,10);
         EditorGUILayout.PropertyField(interactableLayer,new GUIContent("Interactable Layers", "The Layers to check for interactables  on."));
-        EditorGUILayout.PropertyField(interactIconBase,new GUIContent("Icon Base", "An icon that is activated once you're hovering over something interactable"));
-        EditorGUILayout.PropertyField(interactNameText,new GUIContent("Name text", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
-        EditorGUILayout.PropertyField(interactBar,new GUIContent("Interact bar", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
-        EditorGUILayout.PropertyField(interactCompletionBar,new GUIContent("Interact Completion Bar", "A compontent containing the text of the name of the interaction, so that you can see what you're going to do, like `Talk` or `Acquire`"));
 
         EditorGUILayout.EndVertical();
         #endregion
