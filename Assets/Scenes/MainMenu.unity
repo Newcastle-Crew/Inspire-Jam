@@ -5383,7 +5383,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 306860175}
         m_TargetAssemblyTypeName: OpenLinks, Assembly-CSharp
-        m_MethodName: ScottCredit
+        m_MethodName: HazelCredit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

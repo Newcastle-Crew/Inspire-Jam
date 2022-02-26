@@ -22,7 +22,7 @@ public class OpenLinks : MonoBehaviour
     { Application.OpenURL("https://www.youtube.com/channel/UCRohkWLVomg92U9FMbK3hTg/videos"); }
 
     public void HazelCredit()
-    { Application.OpenURL(""); }
+    { Application.OpenURL("https://www.artstation.com/hazelb"); }
 
     /*
 
