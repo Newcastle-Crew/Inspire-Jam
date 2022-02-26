@@ -612,20 +612,24 @@ public class SUPERCharacterAIO : MonoBehaviour
         #endregion
 
         #region Interaction
-        var newInteracting = Interact();
-        if (newInteracting != interactHoveringOver) {
-            if (interactIconBase != null) {
-                interactIconBase.SetActive(newInteracting != null);
-            }
+        var interactHoveringOver = Interact();
 
-            if (interactNameText != null && newInteracting != null) {
-                interactNameText.text = newInteracting.interactionName;
-            }
+        if (interactHoveringOver != null) {
+            if (!interactHoveringOver.CanInteract()) interactHoveringOver = null;
+        }
 
+        if (interactIconBase != null) {
+            interactIconBase.SetActive(interactHoveringOver != null);
+        }
+
+        if (Input.GetKeyDown(KeyCode.E) || interactHoveringOver == null) {
             interactTimer = -1f;
             if (interactBar) interactBar.SetActive(false);
         }
-        interactHoveringOver = newInteracting;
+
+        if (interactNameText != null && interactHoveringOver != null) {
+            interactNameText.text = interactHoveringOver.interactionName;
+        }
 
         if (!Input.GetKey(KeyCode.E) && interactTimer > 0f) {
             interactTimer = -1f;
@@ -1611,6 +1615,7 @@ public interface IInteractable{
     string interactionName { get; }
     float grabTime { get; }
 
+    bool CanInteract();
     bool Interact();
 }
 

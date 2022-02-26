@@ -12,6 +12,8 @@ public class Note : MonoBehaviour, SUPERCharacter.IInteractable {
 
     public string interactionName { get => "Interact"; }
 
+    public bool CanInteract() => true;
+
     public bool Interact() {
         Debug.LogWarning("Old notes are deprecated");
 

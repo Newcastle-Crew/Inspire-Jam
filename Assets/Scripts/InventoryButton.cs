@@ -19,11 +19,15 @@ public class InventoryButton : MonoBehaviour
 
     public void Click() {
         if (item is Equippable equipItem) {
+            if (equipItem.kind == Player.ItemKind.None) {
+                GameState.Instance.PutMessage("Unequipped", 1.5f);
+            } else {
+                GameState.Instance.PutMessage("Equipped " + equipItem.name, 1.5f);
+            }
             Player.Equip(equipItem.kind);
             GameState.CloseInventory();
         } else if (item is Key key) {
-            // TODO
-            Debug.LogWarning("The new key system is unimplemented");
+            GameState.Instance.PutMessage("Use keys to unlock doors", 1.5f);
         } else if (item is NoteItem note) {
             GameState.OpenNote(note);
         } else if (item == null) {

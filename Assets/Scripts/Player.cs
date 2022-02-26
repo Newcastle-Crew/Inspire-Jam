@@ -44,12 +44,6 @@ public class Player : MonoBehaviour
 
         if(Input.GetMouseButtonDown(0)) {
             switch (holding) {
-                case ItemKind.None: {
-                    // Try to interact with something
-                    if (cam.interactHoveringOver != null)
-                        cam.interactHoveringOver.Interact();
-                } break;
-
                 case ItemKind.Gun: {
                     // Shooting!
                     var pos = cam.eyePosition;

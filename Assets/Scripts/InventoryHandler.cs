@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class InventoryHandler : MonoBehaviour
@@ -10,6 +11,19 @@ public class InventoryHandler : MonoBehaviour
 
     void Awake() {
         Instance = this;
+    }
+
+    public static (InventoryButton, Item) FindItemByPredicate(Func<Item, bool> predicate) {
+        var childCount = Instance.transform.childCount;
+        for (int i=0; i<childCount; i++) {
+            var inventoryButton = Instance.transform.GetChild(i).GetComponent<InventoryButton>();
+            var item = inventoryButton.item;
+            if (predicate(item)) {
+                return (inventoryButton, item);
+            }
+        }
+
+        return (null, null);
     }
 
     public static void AddItem(Item item) {

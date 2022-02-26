@@ -8,6 +8,8 @@ public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable {
 
     public Item item;
 
+    public bool CanInteract() => true;
+
     public bool Interact() {
         InventoryHandler.AddItem(item);
 

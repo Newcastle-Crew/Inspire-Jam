@@ -222,6 +222,8 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         }
     }
 
+    public bool CanInteract() => brain.stressLevel < 0.7f;
+
     public bool Interact() {
         GameState.EngageConversation(this, conversation, Vector3.up * 0.6f /* Hardcoded face position! */);
         return true;
