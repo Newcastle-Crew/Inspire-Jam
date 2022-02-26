@@ -22,6 +22,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public string interactionName { get => "Talk"; }
     public float grabTime { get => -1f; }
     public string[] conversation;
+    public bool isGuard = false;
 
     public Behaviour defaultBehaviour;
     public Behaviour stressBehaviour;
@@ -56,6 +57,11 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
     public void SetSusLevel(float susLevel) {
         this.brain.susLevel = Mathf.Max(this.brain.susLevel, susLevel);
+
+        if (isGuard) {
+            this.brain.susLevel = Mathf.Max(GameState.Instance.globalGuardSusness, this.brain.susLevel);
+            GameState.Instance.globalGuardSusness = this.brain.susLevel;
+        }
     }
 
     public void Shot(float damage, Vector3 point, Vector3 dir) {

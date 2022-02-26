@@ -11,6 +11,8 @@ public class GameState : MonoBehaviour
 
     public static GameState Instance = null;
 
+    public float globalGuardSusness = 0f;
+
     // sus's per second
     public float sprint_susness = 0.2f;
     public float note_susness = 0.3f;
@@ -41,6 +43,12 @@ public class GameState : MonoBehaviour
     int currentMessageId = 0;
     public Text message;
     public GameObject messageBase;
+
+    public GameObject interactBar;
+    public Transform interactCompletionBar;
+
+    public GameObject interactIconBase;
+    public Text interactNameText;
 
     bool singleFrameLock = false;
 
