@@ -284,7 +284,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 45200635}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 864614186}
+        m_TargetAssemblyTypeName: Cutscene, Assembly-CSharp
+        m_MethodName: Next
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &45200635
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -516,26 +528,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   panels:
   - image: {fileID: 21300000, guid: 571cd5888fcfb1744b756f47462f783d, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: 74339a90e8f5e1746b782094b4a20cb5, type: 3}
   - image: {fileID: 21300000, guid: e257d3c595aad7544889b13089ad1cc7, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: d9e100f4a5086724ea65971c8c5baa0d, type: 3}
   - image: {fileID: 21300000, guid: 60e6b947fac22774a9ae00f9df82207d, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: f21c4a9c1267d1c4097ad7f1eab2b253, type: 3}
   - image: {fileID: 21300000, guid: 2665a08615dfcde448f4add3ae33f707, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: dace425d575729c4882737eeee6bd9ca, type: 3}
   - image: {fileID: 21300000, guid: cce2a27e164fd794cb3275fb43a1c769, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: 6953402f838818149b90f7727c5acbe4, type: 3}
   - image: {fileID: 21300000, guid: 9f8bb2833b8106a40b01b718b83fab4a, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: 272491339f4b2684ebccdb705517741f, type: 3}
   - image: {fileID: 21300000, guid: a85d03f750bf75748bae61139fbb9e23, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: a3e63b2c8163f2f48a3ea280968733f6, type: 3}
   - image: {fileID: 21300000, guid: aa65bcbc2eae4734a83f4538bccf579c, type: 3}
-    voiceLine: {fileID: 0}
+    voiceLine: {fileID: 8300000, guid: 002a4fae1bbdf81459663b5f6069924f, type: 3}
   nextButton: {fileID: 45200632}
   skipButton: {fileID: 2006608687}
   sprite: {fileID: 113420339}
   mainSceneName: GameScene
-  grazePeriod: 1
   showNextButtonDelay: 1
 --- !u!82 &864614187
 AudioSource:
@@ -548,7 +559,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -879,7 +890,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2006608688
 RectTransform:
   m_ObjectHideFlags: 0
@@ -943,7 +954,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2006608690}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 864614186}
+        m_TargetAssemblyTypeName: Cutscene, Assembly-CSharp
+        m_MethodName: Skip
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2006608690
 MonoBehaviour:
   m_ObjectHideFlags: 0

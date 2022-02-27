@@ -21,7 +21,6 @@ public class Cutscene : MonoBehaviour
 
     public string mainSceneName = "GameScene";
 
-    public float grazePeriod = 1.0f;
     public float showNextButtonDelay = 1.0f;
     float countDown = -10f;
 
@@ -55,7 +54,7 @@ public class Cutscene : MonoBehaviour
 
         var panel = panels[i];
 
-        countDown = Mathf.Max(panel.voiceLine.length * 0.75f, showNextButtonDelay);
+        countDown = Mathf.Max(panel.voiceLine.length - 0.5f, showNextButtonDelay);
         nextButton.SetActive(false);
         sprite.sprite = panel.image;
         GetComponent<AudioSource>().PlayOneShot(panel.voiceLine);
