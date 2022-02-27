@@ -38,7 +38,7 @@ public class Door : MonoBehaviour, SUPERCharacter.IInteractable {
             if (thing == null) return false;
 
             if ((thing as Key).singleUse) {
-                GameState.Instance.PutMessage("Key broke", 1.5f);
+                GameState.Instance.PutMessage("The key snapped!", 1.5f);
                 Destroy(inventory_button.gameObject);
             }
 

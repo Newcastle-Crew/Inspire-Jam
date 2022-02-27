@@ -23,11 +23,4 @@ public class OpenLinks : MonoBehaviour
 
     public void HazelCredit()
     { Application.OpenURL("https://www.artstation.com/hazelb"); }
-
-    /*
-
-    public void ScottCredit()
-    { Application.OpenURL("https://itch.io/profile/thefancyevil"); }
-   
-    */
 }
