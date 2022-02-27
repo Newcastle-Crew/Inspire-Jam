@@ -84,7 +84,7 @@ public class GameState : MonoBehaviour
             } break;
 
             case States.InNote: {
-                if (Input.GetKeyDown(KeyCode.E)) {
+                if (Input.GetKeyDown(KeyCode.Tab)) {
                     CloseNote();
                 }
             } break;
