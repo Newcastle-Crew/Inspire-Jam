@@ -90,13 +90,13 @@ public class GameState : MonoBehaviour
             } break;
 
             case States.InInventory: {
-                if (Input.GetKeyDown(KeyCode.I)) {
+                if (Input.GetKeyDown(KeyCode.Tab)) {
                     CloseInventory();
                 }
             } break;
 
             case States.Playing: {
-                if (Input.GetKeyDown(KeyCode.I)) {
+                if (Input.GetKeyDown(KeyCode.Tab)) {
                     OpenInventory();
                 }
             } break;
