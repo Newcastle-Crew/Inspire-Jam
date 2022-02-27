@@ -29,8 +29,16 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public Behaviour defaultImpulseHandler;
     public Behaviour susBehaviour;
 
+    public AudioClip hurt_sound;
+    public AudioClip death_sound;
+
+    float timeSinceAudioPlay = 0f;
     AudioSource audio_source;
     List<Behaviour> behaviourStack;
+
+    float timeSinceBasicAnnoyance = 0f;
+
+    public AudioClip what_are_you_doing;
 
     void Awake() {
         rb = GetComponent<Rigidbody>();
@@ -56,11 +64,12 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     }
 
     public void SetSusLevel(float susLevel) {
+        var prev_sus_level = this.brain.susLevel;
         this.brain.susLevel = Mathf.Max(this.brain.susLevel, susLevel);
 
-        if (isGuard) {
-            this.brain.susLevel = Mathf.Max(GameState.Instance.globalGuardSusness, this.brain.susLevel);
-            GameState.Instance.globalGuardSusness = this.brain.susLevel;
+        if (prev_sus_level < 3f && this.brain.susLevel >= 3f) {
+            var sound = what_are_you_doing;
+            PlayAudio(sound);
         }
     }
 
@@ -75,6 +84,8 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         if (health <= 0f) {
             impulse.is_auditorial = false;
 
+            PlayAudio(death_sound);
+
             if (state.hitmanTarget == this) {
                 state.winnable = true;
 
@@ -86,6 +97,8 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             rb.constraints = RigidbodyConstraints.None;
             GameState.Instance.npcs.Remove(this);
             Destroy(this);
+        } else {
+            PlayAudio(hurt_sound);
         }
 
         impulse.susLevel = 4f;
@@ -105,6 +118,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
             }
         }
 
+        var sound = behaviour.stateChangeSound;
+        PlayAudio(sound);
+
         behaviourStack.Add(behaviour);
     }
 
@@ -114,6 +130,11 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         for (int i = this.behaviourStack.Count - 1; i >= 0; i--) {
             var behaviour = this.behaviourStack[i];
             if (behaviour.HandleImpulse(info, impulse)) {
+                if (this.behaviourStack.Count - 1 > i) {
+                    var sound = behaviour.stateResumeSoundOrDefault;
+                    PlayAudio(sound);
+                }
+
                 // If we handle the behaviour, we want to cut the rest of the behaviours.
                 for (int i2 = this.behaviourStack.Count - 1; i2 > i; i2--) {
                     this.behaviourStack[i2].Stop();
@@ -135,10 +156,26 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         }
     }
 
+    public void PlayAudio(AudioClip clip) {
+        if (clip == null) return;
+        if (timeSinceAudioPlay < 0.2f) return;
+
+        timeSinceAudioPlay = 0f;
+        audio_source.PlayOneShot(clip);
+    }
+
     void FixedUpdate() {
+        timeSinceAudioPlay += Time.fixedDeltaTime;
+        timeSinceBasicAnnoyance += Time.fixedDeltaTime;
+
         var player_cam = SUPERCharacter.SUPERCharacterAIO.Instance;
         var player_pos = player_cam.eyePosition;
         var player = Player.Instance;
+
+        if (isGuard) {
+            this.brain.susLevel = Mathf.Max(GameState.Instance.globalGuardSusness, this.brain.susLevel);
+            GameState.Instance.globalGuardSusness = this.brain.susLevel;
+        }
 
         if (brain.stressLevel > 0f) {
             brain.stressLevel -= Time.fixedDeltaTime * 0.2f;
@@ -150,28 +187,47 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                 SetSusLevel(4f);
             }
 
+            if (
+                (
+                    player_cam.isSprinting ||
+                    (player_cam.interactTimer >= 0f && player_cam.interactHoveringOver is Pickup pickup && pickup.item is NoteItem note_item) ||
+                    (player_cam.interactTimer >= 0f && player_cam.interactHoveringOver is Door door && door.is_locked)
+                ) && timeSinceBasicAnnoyance > 4f) {
+                var impulse = new GenericSound();
+                impulse.susLevel = 2f;
+                impulse.isSuspicious = true;
+                var info = new ImpulseInfo();
+                info.visible = true;
+                info.pos = player_cam.transform.position;
+                GiveImpulse(info, impulse);
+
+                timeSinceBasicAnnoyance = 0f;
+            }
+
             // If they're suspicious, increase stress level!
             var oldStressLevel = brain.stressLevel;
             brain.stressLevel = Mathf.Max(brain.susLevel, brain.stressLevel);
 
             if (oldStressLevel < brain.stressLevel + 1f) {
-                // TODO: Exclaim!
             }
         }
 
         if (behaviourStack.Count == 0) {
-            if (susBehaviour && brain.susLevel > 1f && canSeePlayer) {
-                SetBehaviour(susBehaviour);
-            } else if (stressBehaviour && brain.stressLevel > 1f) {
-                stressBehaviour.Run(this);
-            } else if (defaultBehaviour) {
-                defaultBehaviour.Run(this);
-            }
+            var behaviour = GetCurrentBaseBehaviour();
+            if (behaviour) behaviour.Run(this);
         } else {
             var currentBehaviour = behaviourStack[behaviourStack.Count - 1];
             currentBehaviour.Run(this);
             if (currentBehaviour.wantsToExit) {
                 behaviourStack.RemoveAt(behaviourStack.Count - 1);
+
+                if (behaviourStack.Count > 0) {
+                    var sound = behaviourStack[behaviourStack.Count - 1].stateResumeSoundOrDefault;
+                    PlayAudio(sound);
+                } else {
+                    var sound = GetCurrentBaseBehaviour()?.stateResumeSoundOrDefault;
+                    PlayAudio(sound);
+                }
             }
         }
 
@@ -183,6 +239,13 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         } else {
             rb.AddTorque(0f, angular_error / MAX_ANGULAR_ERROR * rotation_speed, 0f);
         }
+    }
+
+    Behaviour GetCurrentBaseBehaviour() {
+        if (susBehaviour && brain.susLevel > 1f && canSeePlayer) return susBehaviour;
+        if (stressBehaviour && brain.stressLevel > 1f) return stressBehaviour;
+
+        return defaultBehaviour;
     }
 
     public bool CanSee(Vector3 point, bool big = false) {

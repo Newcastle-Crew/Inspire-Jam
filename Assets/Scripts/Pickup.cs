@@ -2,9 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable {
+public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable, InteractSound {
     public string interactionName { get => "Pick up"; }
     public float grabTime { get => 2f; }
+
+    public AudioClip sound;
+    public AudioClip i_sound { get => sound; }
 
     public Item item;
 

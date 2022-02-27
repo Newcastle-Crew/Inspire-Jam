@@ -10,8 +10,17 @@ public class SimpleLook : Behaviour {
     ImpulseInfo info;
     Impulse impulse;
 
+    public AudioClip susSound;
+    AudioClip normalSound;
+
+    void Awake() {
+        normalSound = this.stateChangeSound;
+    }
+
     public override bool HandleImpulse(ImpulseInfo info, Impulse impulse, bool is_source_impulse = false) {
         if (!is_source_impulse) return false;
+
+        this.stateChangeSound = impulse.susLevel > 1f ? susSound : normalSound;
 
         this.info = info;
         this.impulse = impulse;

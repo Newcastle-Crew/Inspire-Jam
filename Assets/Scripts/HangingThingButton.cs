@@ -2,13 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HangingThingButton : MonoBehaviour, SUPERCharacter.IInteractable {
+public class HangingThingButton : MonoBehaviour, SUPERCharacter.IInteractable, InteractSound {
     public string interactionName { get => "Release"; }
     public float grabTime { get => 6f; }
 
     public Rigidbody controlling;
     public BoxCollider kill_region;
     bool used = false;
+
+    public AudioClip sound;
+    public AudioClip i_sound { get => sound; }
+
 
     public bool CanInteract() => !used;
     public bool Interact() {

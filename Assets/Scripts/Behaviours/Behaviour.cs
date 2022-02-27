@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class Behaviour: MonoBehaviour {
+    public AudioClip stateChangeSound;
+    public AudioClip stateResumeSound;
+
+    public AudioClip stateResumeSoundOrDefault { get => stateResumeSound ? stateResumeSound : stateChangeSound; }
+
     public bool wantsToExit = false;
 
     /// Every frame, a `Run` runs. Hooray!

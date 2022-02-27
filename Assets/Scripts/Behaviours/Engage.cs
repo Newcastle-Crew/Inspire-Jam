@@ -19,6 +19,9 @@ public class Engage : Behaviour {
     float cantSeePlayerTime = 0f;
     public float max_time = 8f;
 
+    public AudioClip loadingSound;
+    public AudioClip fireSound;
+
     public override bool HandleImpulse(ImpulseInfo info, Impulse impulse, bool is_source_impulse = false) {
         // Engaging the player is probably one of the most hard-core thing the npc can do, there is no interrupting this.
         return true;
@@ -57,7 +60,7 @@ public class Engage : Behaviour {
                     state = 1;
                     stateTimer = 0f;
 
-                    // TODO: Play loading sound.
+                    self.PlayAudio(loadingSound);
                 }
             } break;
 
@@ -72,6 +75,7 @@ public class Engage : Behaviour {
                         state = 0;
                         stateTimer = 0f;
                     } else {
+                        self.PlayAudio(fireSound);
                         GameState.CapturePlayer();
                         state = 2;
                         stateTimer = 0f;

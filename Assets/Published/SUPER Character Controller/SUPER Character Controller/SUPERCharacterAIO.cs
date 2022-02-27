@@ -641,6 +641,19 @@ public class SUPERCharacterAIO : MonoBehaviour
             if (grabTime <= 0f) {
                 interactTimer = -1f;
                 interactHoveringOver.Interact();
+                Debug.Log(interactHoveringOver);
+
+                if (interactHoveringOver is InteractSound sound) {
+                    Debug.Log("Is sound!");
+                    if (sound.i_sound) {
+                        var auduio = GetComponent<AudioSource>();
+                        if (auduio != null) {
+                            auduio.PlayOneShot(sound.i_sound);
+                        } else {
+                            Debug.LogWarning("The Player should have an audio player component because I am too lazy to do things properly and I am running out of time!!!!!!");
+                        }
+                    }
+                }
             } else {
                 interactTimer = 1f;
                 interactTimerSpeed = 1f / grabTime;
@@ -663,6 +676,20 @@ public class SUPERCharacterAIO : MonoBehaviour
                     interactBar.SetActive(false);
                 }
                 interactHoveringOver.Interact();
+                // Duplicate code!!!!
+                Debug.Log(interactHoveringOver);
+
+                if (interactHoveringOver is InteractSound sound) {
+                    Debug.Log("Is sound!");
+                    if (sound.i_sound) {
+                        var auduio = GetComponent<AudioSource>();
+                        if (auduio != null) {
+                            auduio.PlayOneShot(sound.i_sound);
+                        } else {
+                            Debug.LogWarning("The Player should have an audio player component because I am too lazy to do things properly and I am running out of time!!!!!!");
+                        }
+                    }
+                }
             }
         }
         #endregion

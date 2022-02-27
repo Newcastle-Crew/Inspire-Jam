@@ -426,6 +426,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6dffc50330c74284f8fc1fd31f01c2d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  stateChangeSound: {fileID: 8300000, guid: dd764babbeee8e447801621af988a1f9, type: 3}
+  stateResumeSound: {fileID: 0}
   wantsToExit: 0
 --- !u!114 &6785727139449998022
 MonoBehaviour:
@@ -1581,6 +1583,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6785727140096670311}
     m_Modifications:
+    - target: {fileID: 2088415622144385843, guid: 218986bb0e405f84bb478e77deb1d014, type: 3}
+      propertyPath: m_FontData.m_MinSize
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2088415623397688934, guid: 218986bb0e405f84bb478e77deb1d014, type: 3}
       propertyPath: item
       value: 
