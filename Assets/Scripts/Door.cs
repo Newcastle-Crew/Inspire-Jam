@@ -36,7 +36,11 @@ public class Door : MonoBehaviour, SUPERCharacter.IInteractable {
         if (is_locked) {
             var (inventory_button, thing) = InventoryHandler.FindItemByPredicate(item => item is Key key && key.color == color);
             if (thing == null) return false;
-            Destroy(inventory_button.gameObject);
+
+            if ((thing as Key).singleUse) {
+                GameState.Instance.PutMessage("Key broke", 1.5f);
+                Destroy(inventory_button.gameObject);
+            }
 
             is_locked = false;
         }

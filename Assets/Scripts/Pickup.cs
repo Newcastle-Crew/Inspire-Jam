@@ -17,6 +17,7 @@ public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable {
         // too, and there's as far as I can tell no way to prevent that. Maybe a workaround would be to put the item stuff itself into another class that isn't the gameobject....
 
         gameObject.SetActive(false);
+        GameState.Instance.PutMessage("Got " + item.name + "『TAB』", 1.5f);
 
         return true;
     }
