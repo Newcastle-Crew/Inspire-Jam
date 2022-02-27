@@ -15,7 +15,7 @@ public class MainMenu : MonoBehaviour
     public GameObject playButton; // play button
 
     public void PlayGame()
-    { SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1); } // Loads the game.
+    { SceneManager.LoadScene("Cutscene"); } // Loads the game.
 
     public void QuitGame()
     {
