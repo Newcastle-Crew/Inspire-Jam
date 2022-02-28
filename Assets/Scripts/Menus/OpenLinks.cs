@@ -23,4 +23,13 @@ public class OpenLinks : MonoBehaviour
 
     public void HazelCredit()
     { Application.OpenURL("https://www.artstation.com/hazelb"); }
+
+    public void SyntyCredit()
+    { Application.OpenURL("https://syntystore.com/collections/frontpage"); }
+
+    public void MixamoCredit()
+    { Application.OpenURL("https://www.mixamo.com/#/"); }
+
+    public void EllieCredit()
+    { Application.OpenURL("https://twitter.com/ehmcvay"); }
 }
