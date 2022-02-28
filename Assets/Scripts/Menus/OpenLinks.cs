@@ -35,4 +35,7 @@ public class OpenLinks : MonoBehaviour
 
     public void FontCredit()
     { Application.OpenURL("https://www.behance.net/gallery/1945173/Claire-Hand-the-new-team-scope-free-font"); }
+
+    public void SoundCredit()
+    { Application.OpenURL("https://www.zapsplat.com"); }
 }

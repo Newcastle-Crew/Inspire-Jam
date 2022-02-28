@@ -59,7 +59,7 @@ public class SettingsMenu : MonoBehaviour
 
     public void SetMusicVolume(float musicVol)
     {
-        SFXMixer.SetFloat("musicVolume", Mathf.Log10(musicVol) * 20);
+        musicMixer.SetFloat("musicVolume", Mathf.Log10(musicVol) * 20);
         PlayerPrefs.SetFloat("musicVolume", musicVol); // Sets the value of SliderVolume to the music volume value.
 
         PlayerPrefs.Save();
@@ -68,7 +68,7 @@ public class SettingsMenu : MonoBehaviour
     public void SetSFXVolume(float sfxVol)
     {
         PlayerPrefs.SetFloat("SFXVolume", sfxVol); // Sets the value of SliderVolume to the sound effect volume value.
-        musicMixer.SetFloat("SFXVolume", Mathf.Log10(sfxVol) * 20);
+        SFXMixer.SetFloat("SFXVolume", Mathf.Log10(sfxVol) * 20);
 
         PlayerPrefs.Save();
     }

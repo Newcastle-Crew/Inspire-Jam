@@ -12,7 +12,16 @@ public class PauseMenu : MonoBehaviour
     public GameObject pauseMenuUI;
 
     private void Awake()
-    { Resume(); } // If the player has to retry the level, this Resume makes sure the level isn't started paused.
+    { Resume(); } // Makes sure that the level isn't started in a paused state.
+    
+    IEnumerator LoadLevel(int levelIndex)
+    {
+        yield return new WaitForSeconds(0);
+        SceneManager.LoadScene(levelIndex); // Loads the main menu.
+    }
+
+    public void BacktoMenu()
+    { StartCoroutine(LoadLevel(0)); } // Make sure the buildindex has the main menu as its '0th' scene.
 
     // Update is called once per frame
     void Update()
@@ -42,12 +51,5 @@ public class PauseMenu : MonoBehaviour
         GameIsPaused = true;
         Cursor.lockState = CursorLockMode.None;
         pauseMenuUI.SetActive(true);
-    }
-
-    public void Retry()
-    {
-        GameIsPaused = false; 
-        Resume();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
