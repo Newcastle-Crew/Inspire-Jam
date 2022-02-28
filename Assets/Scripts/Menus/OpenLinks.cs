@@ -32,4 +32,7 @@ public class OpenLinks : MonoBehaviour
 
     public void EllieCredit()
     { Application.OpenURL("https://twitter.com/ehmcvay"); }
+
+    public void FontCredit()
+    { Application.OpenURL("https://www.behance.net/gallery/1945173/Claire-Hand-the-new-team-scope-free-font"); }
 }
