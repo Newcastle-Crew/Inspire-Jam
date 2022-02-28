@@ -23,6 +23,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     public float grabTime { get => -1f; }
     public string[] conversation;
     public bool isGuard = false;
+    public bool seeingPlayerBeingSussyRightNowBtwIfYouWantedToKnowIdk = false;
 
     public Behaviour defaultBehaviour;
     public Behaviour stressBehaviour;
@@ -88,6 +89,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
             if (state.hitmanTarget == this) {
                 state.winnable = true;
+                state.objectiveMessage.text = state.killedTargetObjectiveMessage;
 
                 if (player.inside_exit_point) {
                     player.WinGame();
@@ -192,16 +194,24 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
                     player_cam.isSprinting ||
                     (player_cam.interactTimer >= 0f && player_cam.interactHoveringOver is Pickup pickup && pickup.item is NoteItem note_item) ||
                     (player_cam.interactTimer >= 0f && player_cam.interactHoveringOver is Door door && door.is_locked)
-                ) && timeSinceBasicAnnoyance > 4f) {
-                var impulse = new GenericSound();
-                impulse.susLevel = 2f;
-                impulse.isSuspicious = true;
-                var info = new ImpulseInfo();
-                info.visible = true;
-                info.pos = player_cam.transform.position;
-                GiveImpulse(info, impulse);
+                )
+            ) {
+                if (timeSinceBasicAnnoyance > 3f) {
+                    var impulse = new GenericSound();
+                    impulse.susLevel = 2f;
+                    impulse.isSuspicious = true;
+                    var info = new ImpulseInfo();
+                    info.visible = true;
+                    info.pos = player_cam.transform.position;
+                    GiveImpulse(info, impulse);
 
-                timeSinceBasicAnnoyance = 0f;
+                    timeSinceBasicAnnoyance = 0f;
+                }
+
+                seeingPlayerBeingSussyRightNowBtwIfYouWantedToKnowIdk = true;
+                Debug.Log("Seeing player sussy right now");
+            } else {
+                seeingPlayerBeingSussyRightNowBtwIfYouWantedToKnowIdk = false;
             }
 
             // If they're suspicious, increase stress level!

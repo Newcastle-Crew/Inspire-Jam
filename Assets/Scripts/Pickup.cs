@@ -15,6 +15,17 @@ public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable, InteractSound
     public bool CanInteract() => true;
 
     public bool Interact() {
+        if (item is NoteItem note) {
+            GameState.Instance.notesPickedUp += 1;
+
+            if (GameState.Instance.notesPickedUp >= GameState.Instance.numNotesNeededForObjective) {
+                // Don't update objective if already killed target
+                if (!GameState.Instance.winnable) {
+                    GameState.Instance.objectiveMessage.text = GameState.Instance.pickedUpNotesObjectiveMessage;
+                }
+            }
+        }
+
         InventoryHandler.AddItem(item);
 
         // Urgh, c#!!!! I don't know how else to do this other than to add an extra item component to the thing, but that means that when we destroy the gameobject the item gets destroyed
@@ -22,7 +33,7 @@ public class Pickup : MonoBehaviour, SUPERCharacter.IInteractable, InteractSound
 
         gameObject.SetActive(false);
 
-            GameState.Instance.PutMessage("Got " + item.name, 1.5f); // The UI will have a 'TAB to open inventory' prompt, so I removed the line that told players to press tab.
+        GameState.Instance.PutMessage("Got " + item.name, 1.5f); // The UI will have a 'TAB to open inventory' prompt, so I removed the line that told players to press tab.
 
         return true;
     }

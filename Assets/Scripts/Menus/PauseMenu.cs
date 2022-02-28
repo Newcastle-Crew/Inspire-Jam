@@ -37,19 +37,17 @@ public class PauseMenu : MonoBehaviour
 
     public void Resume()
     {
-        Cursor.visible = false;
+        SUPERCharacter.SUPERCharacterAIO.Instance.ExitGUIMode();
         Time.timeScale = 1f;
         GameIsPaused = false;
-        Cursor.lockState = CursorLockMode.Locked;
         pauseMenuUI.SetActive(false);
     }
 
     public void Pause()
     {
-        Cursor.visible = true;
+        SUPERCharacter.SUPERCharacterAIO.Instance.EnterGUIMode();
         Time.timeScale = 0f;
         GameIsPaused = true;
-        Cursor.lockState = CursorLockMode.None;
         pauseMenuUI.SetActive(true);
     }
 }

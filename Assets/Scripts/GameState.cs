@@ -47,6 +47,12 @@ public class GameState : MonoBehaviour
     public GameObject interactBar;
     public Transform interactCompletionBar;
 
+    public Text objectiveMessage;
+    public int notesPickedUp = 0;
+    public int numNotesNeededForObjective = 1;
+    public string pickedUpNotesObjectiveMessage = "Kill target";
+    public string killedTargetObjectiveMessage = "Escape";
+
     public GameObject interactIconBase;
     public Text interactNameText;
 
@@ -59,6 +65,7 @@ public class GameState : MonoBehaviour
         if (!hitmanTarget) {
             Debug.LogError("Please set hitmanTarget to something");
             winnable = true;
+            objectiveMessage.text = killedTargetObjectiveMessage;
         }
     }
 
