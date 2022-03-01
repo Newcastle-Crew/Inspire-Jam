@@ -47,6 +47,10 @@ public class GameState : MonoBehaviour
     public GameObject interactBar;
     public Transform interactCompletionBar;
 
+    // Objective stuff
+    public GameObject NotesImage;
+    public GameObject TargetImage;
+    public GameObject ExitImage;
     public Text objectiveMessage;
     public int notesPickedUp = 0;
     public int numNotesNeededForObjective = 1;
@@ -66,6 +70,8 @@ public class GameState : MonoBehaviour
             Debug.LogError("Please set hitmanTarget to something");
             winnable = true;
             objectiveMessage.text = killedTargetObjectiveMessage;
+            TargetImage.SetActive(false);
+            ExitImage.SetActive(true);
         }
     }
 
@@ -73,6 +79,12 @@ public class GameState : MonoBehaviour
         if (singleFrameLock) {
             singleFrameLock = false;
             return;
+        }
+
+        if(notesPickedUp == 6)
+        {
+            NotesImage.SetActive(false);
+            TargetImage.SetActive(true);
         }
 
         if (messageTimer > 0f) {

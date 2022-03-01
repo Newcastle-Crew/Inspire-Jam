@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class HangingThingButton : MonoBehaviour, SUPERCharacter.IInteractable, InteractSound {
     public string interactionName { get => "Release"; }
-    public float grabTime { get => 6f; }
+    public float grabTime { get => 5f; }
 
     public Rigidbody controlling;
     public BoxCollider kill_region;
@@ -33,7 +33,8 @@ public class HangingThingButton : MonoBehaviour, SUPERCharacter.IInteractable, I
         used = true;
 
         // TODO: Should we really make guards sus immediately?
-        GameState.Instance.globalGuardSusness = 1.5f;
+        // GameState.Instance.globalGuardSusness = 1.5f;
+        // Answer: No. Breaks the game, you get caught immediately.
 
         return true;
     }
