@@ -43,7 +43,7 @@ public class Player : MonoBehaviour
         }
 
         if(Input.GetMouseButtonDown(0)) {
-            switch (holding.kind) {
+            switch (holding?.kind) {
                 case ItemKind.Gun: {
                     if (holding.usageSound) {
                         susSoundTemp.PlayOneShot(holding.usageSound);
