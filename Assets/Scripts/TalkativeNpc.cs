@@ -185,7 +185,7 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
 
         canSeePlayer = CanSee(player_pos, !player_cam.isCrouching);
         if (canSeePlayer) {
-            if (player.holding == Player.ItemKind.Gun) {
+            if (player.holding.kind == Player.ItemKind.Gun) {
                 SetSusLevel(4f);
             }
 

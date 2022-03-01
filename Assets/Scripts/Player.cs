@@ -17,7 +17,7 @@ public class Player : MonoBehaviour
 
     public enum ItemKind { None, Gun }
     
-    public ItemKind holding = ItemKind.None;
+    public Equippable holding = null;
 
     bool lost = false;
 
@@ -26,7 +26,7 @@ public class Player : MonoBehaviour
         cam = GetComponent<SUPERCharacter.SUPERCharacterAIO>();
     }
 
-    public static void Equip(ItemKind holding) {
+    public static void Equip(Equippable holding) {
         Instance.holding = holding;
         Debug.Log("Equipped");
     }
@@ -43,8 +43,12 @@ public class Player : MonoBehaviour
         }
 
         if(Input.GetMouseButtonDown(0)) {
-            switch (holding) {
+            switch (holding.kind) {
                 case ItemKind.Gun: {
+                    if (holding.usageSound) {
+                        susSoundTemp.PlayOneShot(holding.usageSound);
+                    }
+
                     // Shooting!
                     var pos = cam.eyePosition;
                     var rotation = cam.eyeRotation;
@@ -72,6 +76,13 @@ public class Player : MonoBehaviour
                         } else {
                             // It might not have the npc component if you're shooting on an already dead corpse...
                         }
+                    }
+
+                    if (holding.single_use) {
+                        var (inventory_button, item) = InventoryHandler.FindItemByPredicate(item => item == holding);
+                        Destroy(inventory_button.gameObject);
+
+                        holding = null;
                     }
                 } break;
             }
