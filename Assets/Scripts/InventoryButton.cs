@@ -24,7 +24,7 @@ public class InventoryButton : MonoBehaviour
             } else {
                 GameState.Instance.PutMessage("Equipped " + equipItem.name, 1.5f);
             }
-            Player.Equip(equipItem.kind);
+            Player.Equip(equipItem);
             GameState.CloseInventory();
         } else if (item is Key key) {
             GameState.Instance.PutMessage("Use keys to unlock doors", 1.5f);

@@ -183,6 +183,7 @@ public class GameState : MonoBehaviour
     }
 
     public static void DisengageConversation() {
+        Debug.Log("Called disengage conversation");
         var state = Instance;
         var playerCamera = SUPERCharacter.SUPERCharacterAIO.Instance;
 
