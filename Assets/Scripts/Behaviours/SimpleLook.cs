@@ -41,6 +41,11 @@ public class SimpleLook : Behaviour {
             info.visible = true;
         }
 
+        if (impulse.isSuspicious && self.seeingPlayerBeingSussyRightNowBtwIfYouWantedToKnowIdk) {
+            var diff = Player.Instance.transform.position - self.transform.position;
+            turningTowardsAngle = Quaternion.LookRotation(diff, Vector3.up).eulerAngles.y;
+        }
+
         var currentAngle = transform.rotation.eulerAngles.y;
 
         // TODO: I feel like this comparison could be made a lot simpler, maybe by comparing the quaternion components
@@ -48,7 +53,8 @@ public class SimpleLook : Behaviour {
         if (Mathf.Abs(currentAngle - turningTowardsAngle) < 5.0f) {
             this.lookTime += Time.fixedDeltaTime;
 
-            if (this.lookTime > 1f) this.wantsToExit = true;
+            const float wantedLookTime = 4f;
+            if (this.lookTime > wantedLookTime) this.wantsToExit = true;
         }
 
         self.target_angle = turningTowardsAngle;
