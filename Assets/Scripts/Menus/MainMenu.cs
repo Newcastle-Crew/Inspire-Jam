@@ -14,6 +14,12 @@ public class MainMenu : MonoBehaviour
 
     public GameObject playButton; // play button
 
+    private void Start()
+    {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
     public void PlayGame()
     { SceneManager.LoadScene("Cutscene"); } // Loads the game.
 

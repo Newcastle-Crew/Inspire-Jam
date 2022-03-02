@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Brain {
+public class Brain 
+{
     public float susLevel = 0f;
     public float stressLevel = 0f;
 }
