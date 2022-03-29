@@ -289,7 +289,6 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
     }
 
     void OnDrawGizmos() {
-
         var eyePos = EyePosition();
         var player = SUPERCharacter.SUPERCharacterAIO.Instance;
         if (!player) return;
@@ -297,8 +296,9 @@ public class TalkativeNpc : MonoBehaviour, SUPERCharacter.IInteractable {
         var player_pos = player.eyePosition;
 
         if (canSeePlayer) {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(player_pos, eyePos);
+            Gizmos.color = new Color(1f, 0f, 0f, 0.5f);
+            Gizmos.DrawLine(player_pos - Vector3.up * 0.5f, eyePos);
+            Gizmos.DrawSphere(eyePos, 1f);
         }
     }
 
