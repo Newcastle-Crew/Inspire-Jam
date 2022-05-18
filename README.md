@@ -1,2 +1,3 @@
 # Inspire-Jam
-A game created in 10 days for Inspire Jam 2022.
+
+World's worst hitman! A game created in 10 days for Inspire Jam 2022.
